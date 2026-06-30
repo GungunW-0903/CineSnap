@@ -3,7 +3,7 @@
 // shows an empty/error state while the backend is offline or unconfigured.
 import { dummyShowsData } from '../assets/assets'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://localhost:5000/api' : '')
 
 // Remove entries that share an _id so React keys stay unique.
 function dedupeById(list) {

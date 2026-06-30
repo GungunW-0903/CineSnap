@@ -12,10 +12,37 @@ const navLinks = [
   { label: 'Favorites', path: '/favourite' }
 ]
 
-const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false)
+const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
+
+const AuthControls = () => {
   const { user } = useUser()
   const { openSignIn } = useClerk()
+  const navigate = useNavigate()
+
+  if (!user) {
+    return (
+      <button onClick={openSignIn} className='btn-cinesnap text-sm px-4 py-2 md:px-5 md:py-2.5'>
+        <Sparkles className='w-4 h-4' />
+        Join Now
+      </button>
+    )
+  }
+
+  return (
+    <UserButton>
+      <UserButton.MenuItems>
+        <UserButton.Action
+          label='My Bookings'
+          labelIcon={<TicketPlus width={15} />}
+          onClick={() => navigate('/my-bookings')}
+        />
+      </UserButton.MenuItems>
+    </UserButton>
+  )
+}
+
+const Navbar = () => {
+  const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
 
   const navigate = useNavigate()
@@ -73,21 +100,13 @@ const Navbar = () => {
             <SearchIcon className='w-4 h-4' />
           </button>
 
-          {!user ? (
-            <button onClick={openSignIn} className='btn-cinesnap text-sm px-4 py-2 md:px-5 md:py-2.5'>
-              <Sparkles className='w-4 h-4' />
-              Join Now
-            </button>
+          {clerkEnabled ? (
+            <AuthControls />
           ) : (
-            <UserButton>
-              <UserButton.MenuItems>
-                <UserButton.Action
-                  label='My Bookings'
-                  labelIcon={<TicketPlus width={15} />}
-                  onClick={() => navigate('/my-bookings')}
-                />
-              </UserButton.MenuItems>
-            </UserButton>
+            <button onClick={() => navigate('/movies')} className='btn-cinesnap text-sm px-4 py-2 md:px-5 md:py-2.5'>
+              <Sparkles className='w-4 h-4' />
+              Explore
+            </button>
           )}
 
           <button
