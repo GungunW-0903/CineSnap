@@ -1,0 +1,23 @@
+{
+  "name": "cinesnap",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack movie booking application with shows, seat booking, favorites, reviews, Stripe payments, and email notifications.",
+  "scripts": {
+    "install:all": "npm install --prefix client && npm install --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "build": "npm run build --prefix client",
+    "start": "npm start --prefix server",
+    "lint": "npm run lint --prefix client"
+  },
+  "keywords": [
+    "movie-booking",
+    "react",
+    "vite",
+    "express",
+    "mongodb",
+    "stripe"
+  ],
+  "license": "MIT"
+}
