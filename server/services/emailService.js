@@ -1,4 +1,5 @@
-const { getTransporter, isEmailEnabled, EMAIL_FROM } = require('../config/email');
+const nodemailer = require('nodemailer');
+const { ensureReady, EMAIL_FROM } = require('../config/email');
 
 const BRAND = {
   name: 'CineSnap',
@@ -13,15 +14,21 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
  * Core send helper. Never throws into the request path — failures are logged
  * and swallowed so a flaky SMTP server can't break a booking.
  */
-async function send({ to, subject, html }) {
-  if (!isEmailEnabled()) {
+async function send({ to, subject, html, attachments }) {
+  const transporter = await ensureReady();
+  if (!transporter) {
     console.log(`✉ [email skipped] → ${to} | ${subject}`);
     return { skipped: true };
   }
   try {
-    const info = await getTransporter().sendMail({ from: EMAIL_FROM, to, subject, html });
-    console.log(`✓ Email sent → ${to} (${info.messageId})`);
-    return { sent: true, messageId: info.messageId };
+    const info = await transporter.sendMail({ from: EMAIL_FROM, to, subject, html, attachments });
+    const preview = nodemailer.getTestMessageUrl(info); // set only for Ethereal
+    if (preview) {
+      console.log(`✉ Email sent → ${to}\n   📬 Preview: ${preview}`);
+    } else {
+      console.log(`✓ Email sent → ${to} (${info.messageId})`);
+    }
+    return { sent: true, messageId: info.messageId, preview };
   } catch (err) {
     console.error(`✗ Email failed → ${to}:`, err.message);
     return { error: err.message };
@@ -57,6 +64,26 @@ function btn(label, href) {
 /** Booking confirmation (sent after successful payment). */
 async function sendBookingConfirmation(booking) {
   const seats = (booking.seats || []).join(', ');
+
+  // Turn the stored QR data-URL into an inline attachment (CID) — Gmail and
+  // most clients block data:image src, but reliably render cid: attachments.
+  const attachments = [];
+  let qrBlock = '';
+  if (booking.qrCode && booking.qrCode.startsWith('data:image')) {
+    const base64 = booking.qrCode.split(',')[1];
+    attachments.push({
+      filename: 'cinesnap-ticket-qr.png',
+      content: Buffer.from(base64, 'base64'),
+      cid: 'ticketqr',
+    });
+    qrBlock = `
+    <div style="text-align:center;margin-top:22px;padding:20px;background:#ffffff;border-radius:16px;">
+      <img src="cid:ticketqr" width="200" height="200" alt="Ticket QR code" style="display:block;margin:0 auto;" />
+      <p style="color:#0b0f1a;font-size:12px;margin:12px 0 0;font-weight:600;">Scan at the door to check in</p>
+      <p style="color:#5b6680;font-size:11px;margin:4px 0 0;font-family:monospace;">${booking.bookingCode}</p>
+    </div>`;
+  }
+
   const body = `
     <p style="color:#c4ccda;font-size:15px;line-height:1.6;margin:0 0 20px;">
       Hi ${booking.userName || 'there'}, your tickets are confirmed. 🎬
@@ -71,13 +98,15 @@ async function sendBookingConfirmation(booking) {
         <tr><td style="padding:6px 0;color:#8a94a8;">Booking code</td><td style="padding:6px 0;text-align:right;font-family:monospace;">${booking.bookingCode}</td></tr>
       </table>
     </div>
-    <p style="color:#8a94a8;font-size:13px;margin:18px 0 0;">Show this code at the door — no printing needed.</p>
+    ${qrBlock}
+    <p style="color:#8a94a8;font-size:13px;margin:18px 0 0;">Show this QR at the door — no printing needed.</p>
     ${btn('View my bookings', `${FRONTEND_URL}/my-bookings`)}
   `;
   return send({
     to: booking.userEmail,
     subject: `🎟 Your CineSnap tickets — ${booking.movieTitle || 'Booking confirmed'}`,
     html: shell('Booking confirmed!', body),
+    attachments,
   });
 }
 

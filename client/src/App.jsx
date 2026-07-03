@@ -6,6 +6,9 @@ import Home from './pages/Home'
 import Movies from './pages/Movies'
 import MovieDetails from './pages/MovieDetails'
 import SeatLayout from './pages/SeatLayout'
+import Checkout from './pages/Checkout'
+import BookingSuccess from './pages/BookingSuccess'
+import BookingCancelled from './pages/BookingCancelled'
 import MyBookings from './pages/MyBookings'
 import Favorite from './pages/Favorite'
 import { Toaster } from 'react-hot-toast'
@@ -15,7 +18,11 @@ import Dashboard from './pages/admin/Dashboard'
 import AddShows from './pages/admin/AddShows'
 import ListShows from './pages/admin/ListShows'
 import ListBooking from './pages/admin/ListBooking'
+import AdminScan from './pages/admin/AdminScan'
 import SmoothScroll from './components/ui/SmoothScroll'
+import Rewards from './pages/Rewards'
+import Verify from './pages/Verify'
+import { ProfileProvider } from './context/ProfileContext'
 
 // Cinematic page transition wrapper
 const PageTransition = ({ children }) => (
@@ -53,13 +60,19 @@ const AppContent = () => {
           <Route path="/movies" element={<PageTransition><Movies /></PageTransition>} />
           <Route path="/movies/:id" element={<PageTransition><MovieDetails /></PageTransition>} />
           <Route path="/movies/:id/:date" element={<PageTransition><SeatLayout /></PageTransition>} />
+          <Route path="/checkout/:bookingId" element={<PageTransition><Checkout /></PageTransition>} />
+          <Route path="/booking-success" element={<PageTransition><BookingSuccess /></PageTransition>} />
+          <Route path="/booking-cancelled" element={<PageTransition><BookingCancelled /></PageTransition>} />
           <Route path="/my-bookings" element={<PageTransition><MyBookings /></PageTransition>} />
+          <Route path="/rewards" element={<PageTransition><Rewards /></PageTransition>} />
+          <Route path="/verify/:code" element={<PageTransition><Verify /></PageTransition>} />
           <Route path="/favourite" element={<PageTransition><Favorite /></PageTransition>} />
           <Route path="/admin/*" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="add-shows" element={<AddShows />} />
             <Route path="list-shows" element={<ListShows />} />
             <Route path="list-bookings" element={<ListBooking />} />
+            <Route path="scan" element={<AdminScan />} />
           </Route>
         </Routes>
       </AnimatePresence>
@@ -70,7 +83,11 @@ const AppContent = () => {
 }
 
 const App = () => {
-  return <AppContent />
+  return (
+    <ProfileProvider>
+      <AppContent />
+    </ProfileProvider>
+  )
 }
 
 export default App

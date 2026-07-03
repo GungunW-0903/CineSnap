@@ -1,13 +1,17 @@
 const Stripe = require('stripe');
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn('⚠ STRIPE_SECRET_KEY not set. Payment features will be disabled.');
+// A key is only "real" if it's present, looks like a Stripe secret key, and
+// isn't the placeholder shipped in .env.example. This lets card payments stay
+// cleanly disabled (503) instead of failing with a confusing auth error.
+const rawKey = process.env.STRIPE_SECRET_KEY || '';
+const isRealKey = rawKey.startsWith('sk_') && !rawKey.includes('your_');
+
+if (!isRealKey) {
+  console.warn('⚠ STRIPE_SECRET_KEY not configured — card payments disabled (demo payment still works).');
 }
 
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2023-10-16',
-    })
+const stripe = isRealKey
+  ? new Stripe(rawKey, { apiVersion: '2023-10-16' })
   : null;
 
 /**

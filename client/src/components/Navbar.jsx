@@ -1,8 +1,29 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { assets } from '../assets/assets'
-import { SearchIcon, XIcon, MenuIcon, TicketPlus, Sparkles } from 'lucide-react'
+import { SearchIcon, XIcon, MenuIcon, TicketPlus, Sparkles, Crown } from 'lucide-react'
 import { useUser, useClerk, UserButton } from '@clerk/clerk-react'
+import { useProfile, tierInfo } from '../context/ProfileContext'
+
+// Loyalty points + tier badge — links to the Rewards page.
+const LoyaltyBadge = () => {
+  const { profile } = useProfile()
+  const navigate = useNavigate()
+  if (!profile) return null
+
+  const { current } = tierInfo(profile.loyaltyPoints || 0)
+  return (
+    <button
+      onClick={() => { navigate('/rewards'); scrollTo(0, 0) }}
+      className='hidden sm:flex items-center gap-2 rounded-full pl-2.5 pr-3 py-1.5 border border-white/15 hover:border-white/35 transition cursor-pointer'
+      title={`${current.name} tier · ${profile.loyaltyPoints || 0} points`}
+    >
+      <Crown className='w-4 h-4' style={{ color: current.color }} />
+      <span className='text-xs font-semibold' style={{ color: current.color }}>{current.name}</span>
+      <span className='text-xs text-gray-300'>{profile.loyaltyPoints || 0} pts</span>
+    </button>
+  )
+}
 
 const navLinks = [
   { label: 'Home', path: '/' },
@@ -99,6 +120,8 @@ const Navbar = () => {
           >
             <SearchIcon className='w-4 h-4' />
           </button>
+
+          <LoyaltyBadge />
 
           {clerkEnabled ? (
             <AuthControls />

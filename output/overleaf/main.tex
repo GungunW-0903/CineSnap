@@ -1,0 +1,216 @@
+%% ============================================================
+%%  Gungun Wadhwani - Resume
+%%  Based on Jake's Resume Overleaf template
+%%  Compiler: pdfLaTeX
+%% ============================================================
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\input{glyphtounicode}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-0.55in}
+\addtolength{\textheight}{1.1in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+\pdfgentounicode=1
+
+%% ---- Section formatting ----
+\titleformat{\section}{
+  \vspace{-5pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-6pt}]
+
+%% ---- Custom commands ----
+\newcommand{\resumeItem}[1]{
+  \item\small{#1 \vspace{-2pt}}
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.18in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%% ============================================================
+\begin{document}
+
+%% ---- HEADING -----------------------------------------------
+\begin{center}
+    {\Huge \scshape Gungun Wadhwani} \\ \vspace{5pt}
+    \small
+    +91 8770958514 $\cdot$
+    \href{mailto:wadhwagungun09@gmail.com}{\underline{wadhwagungun09@gmail.com}} $\cdot$
+    \href{https://linkedin.com/in/gungunwadhwani}{\underline{linkedin.com/in/gungunwadhwani}} $\cdot$
+    \href{https://github.com/GungunW-0903}{\underline{github.com/GungunW-0903}} $\cdot$
+    \href{https://gungunw-0903.github.io}{\underline{Portfolio}} $\cdot$
+    \href{https://leetcode.com/u/GungunW-0903/}{\underline{LeetCode}} $\cdot$
+    Rewa, MP
+\end{center}
+
+%% ---- EDUCATION ---------------------------------------------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {National Institute of Technology, Patna}{2024 -- Present}
+      {Bachelor of Technology in Computer Science and Engineering}{CGPA: 8.75 / 10.0}
+    \resumeSubheading
+      {Sacred Heart Convent School}{Completed}
+      {Higher Secondary Education}{Rewa, Madhya Pradesh}
+  \resumeSubHeadingListEnd
+
+%% ---- SKILLS ------------------------------------------------
+\section{Skills and Tools}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{Languages}{: Python, Java, C++} \\[2pt]
+     \textbf{Web Development}{: ReactJS, Node.js, Express.js, Tailwind CSS, REST APIs, UI/UX Design} \\[2pt]
+     \textbf{Databases}{: MongoDB, SQL} \\[2pt]
+     \textbf{Tools \& Platforms}{: Firebase, Git, GitHub, Clerk Authentication, Stripe, Vercel} \\[2pt]
+     \textbf{Core CS Concepts}{: Data Structures \& Algorithms, OOP, Computer Networks, DBMS, Compiler Design, Theory of Computation} \\[2pt]
+     \textbf{Soft Skills}{: Leadership, Teamwork, Communication, Time Management, Critical Thinking}
+    }}
+ \end{itemize}
+ \vspace{-10pt}
+
+%% ---- PROJECTS ----------------------------------------------
+\section{Projects}
+    \resumeSubHeadingListStart
+
+      \resumeProjectHeading
+          {\textbf{CineSnap --- Full-Stack Movie Ticket Booking Platform} $|$ \emph{ReactJS, Vite, Node.js, Express.js, MongoDB, Clerk, Stripe}}{Jun 2026 -- Present}
+          \resumeItemListStart
+            \resumeItem{Built a MERN-style movie booking platform with movie discovery, detail pages, showtime selection, interactive seat booking, favorites, reviews, and booking history.}
+            \resumeItem{Designed REST APIs for movies, shows, bookings, reviews, payments, users, email notifications, and admin workflows with MongoDB/Mongoose data models.}
+            \resumeItem{Integrated Clerk-ready authentication, Stripe Checkout, and Nodemailer while keeping frontend and backend deployable as independent services.}
+            \resumeItem{\textbf{GitHub:} \href{https://github.com/GungunW-0903/CineSnap}{\underline{github.com/GungunW-0903/CineSnap}} $|$ \textbf{Deployed:} \href{https://gungunw-0903.github.io/CineSnap/}{\underline{gungunw-0903.github.io/CineSnap}}}
+          \resumeItemListEnd
+
+      \resumeProjectHeading
+          {\textbf{Velocity --- AI-Powered Career Growth Platform} $|$ \emph{JavaScript, React, Firebase}}{\href{https://github.com/Mohnish27-dev/Velocity}{\underline{GitHub}}}
+          \resumeItemListStart
+            \resumeItem{Led frontend development in a 4-member team at GDSC Techsprint, delivering AI-assisted resume enhancement, mock interviews, and skill-based job matching.}
+            \resumeItem{Implemented a Fellowship \& Challenges module where companies publish real-world tasks and assess candidates through practical performance.}
+            \resumeItem{Achievement: Helped the team secure a \textbf{Top 10} rank in a competitive national-level online hackathon.}
+          \resumeItemListEnd
+
+      \resumeProjectHeading
+          {\textbf{SafeExit --- Safety \& Emergency Assistance Platform} $|$ \emph{Next.js, React, Node.js, MongoDB}}{Project}
+          \resumeItemListStart
+            \resumeItem{Developed a safety-focused web platform for emergency support, trusted-contact access, incident reporting, and dashboard-based monitoring.}
+            \resumeItem{Structured protected flows, secure data handling, and role-aware dashboard screens for users and administrators in time-sensitive scenarios.}
+            \resumeItem{Improved usability with modular components, reusable API patterns, and responsive layouts for mobile-first emergency access.}
+          \resumeItemListEnd
+
+    \resumeSubHeadingListEnd
+
+%% ---- CERTIFICATIONS ----------------------------------------
+\section{Certifications and Coding}
+  \resumeSubHeadingListStart
+    \resumeSubItem{\textbf{NPTEL --- The Joy of Computing Using Python (IIT Madras):} Strengthened Python fundamentals, computational thinking, and problem-solving.}
+    \resumeSubItem{\textbf{Google Cloud Skills Boost:} Completed learning paths in Cloud Computing Fundamentals, Machine Learning Foundations, BigQuery for Data Analysis, and Generative AI.}
+    \resumeSubItem{\textbf{Competitive Programming:} Solved \textbf{350+} problems on LeetCode and GeeksforGeeks spanning arrays, trees, graphs, and dynamic programming. \href{https://leetcode.com/u/GungunW-0903/}{\underline{LeetCode Profile}}}
+  \resumeSubHeadingListEnd
+
+%% ---- OPEN SOURCE -------------------------------------------
+\section{Open Source Contributions}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Contributor --- GirlScript Summer of Code (GSSoC 2026)}{2026}
+      {}{}
+      \vspace{-14pt}
+      \resumeItemListStart
+        \resumeItem{Shortlisted as an open-source contributor and merged multiple pull requests, demonstrating collaboration, code quality, and version-control discipline.}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+
+%% ---- POSITIONS OF RESPONSIBILITY ---------------------------
+\section{Positions of Responsibility}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading
+      {Web Developer, Web Development Cell --- NIT Patna}{2025 -- Present}
+      {}{}
+      \vspace{-14pt}
+      \resumeItemListStart
+        \resumeItem{Developing and maintaining web applications using ReactJS, Node.js, and MongoDB.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {PR Team Member, Robotics Club --- NIT Patna}{2025 -- Present}
+      {}{}
+      \vspace{-14pt}
+      \resumeItemListStart
+        \resumeItem{Managed outreach, event promotion, and inter-college engagement for technical events.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Dance Member, Total Chaos Cultural Club --- NIT Patna}{2025 -- Present}
+      {}{}
+      \vspace{-14pt}
+      \resumeItemListStart
+        \resumeItem{Contributed to choreography, rehearsals, and stage performances at inter-college events.}
+      \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
+
+%% ---- ACHIEVEMENTS ------------------------------------------
+\section{Achievements and Hackathons}
+  \resumeSubHeadingListStart
+    \resumeSubItem{\textbf{National Hackathon --- Top 10 Finish:} Ranked in the \textbf{Top 10} at GDSC Techsprint, NIT Patna.}
+    \resumeSubItem{\textbf{Smart India Hackathon (SIH):} Shortlisted in the internal college round among top-performing teams.}
+    \resumeSubItem{\textbf{Campus Ambassador, IIT Delhi:} Awarded a \textbf{Letter of Recommendation} for exceptional performance.}
+    \resumeSubItem{\textbf{Athletics \& Cultural Excellence:} Secured 1\textsuperscript{st} Prize in Group Dance and Individual Dance at IIT Patna; awarded in the \textbf{200m and 400m} running categories.}
+    \resumeSubItem{\textbf{100\% Attendance Award:} Recognised for consistent commitment, punctuality, and dedication.}
+  \resumeSubHeadingListEnd
+
+%% ---- LANGUAGES & INTERESTS ---------------------------------
+\section{Languages and Interests}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{Languages}{: English (Fluent), Hindi (Fluent)} \\[2pt]
+     \textbf{Interests}{: Dancing, Drawing \& Crafting, Carrom, Badminton, Athletics, Event Anchoring}
+    }}
+ \end{itemize}
+
+\end{document}

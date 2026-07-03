@@ -1,26 +1,29 @@
 import React,{ useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { dummyShowsData,dummyDateTimeData } from '../assets/assets'
+import { dummyShowsData } from '../assets/assets'
 import BlurCircle from '../components/BlurCircle'
 import { StarIcon,Heart, PlayCircleIcon } from 'lucide-react'
 import timeFormat from '../lib/timeFormat'
 import DateSelect from '../components/DateSelect'
 import MovieCard from '../components/MovieCard'
 import Loading from '../components/Loading'
+import ReviewsSection from '../components/ReviewsSection'
+import { fetchMovieById, fetchShowsForMovie } from '../lib/api'
 const MovieDetails = () => {
   const {id} =useParams()
   const[show,setShow]=useState(null)
   const navigate=useNavigate()
 
   const getShow= async()=>{
-    const show=dummyShowsData.find(show=>show._id===id)
-    if(show){
-    setShow({
-      movie:show,
-      dateTime: dummyDateTimeData
-    })
+    // Live movie + showtimes, with graceful fallback baked into the api layer.
+    const [movie, dateTime] = await Promise.all([
+      fetchMovieById(id),
+      fetchShowsForMovie(id),
+    ])
+    if (movie) {
+      setShow({ movie, dateTime })
+    }
   }
-}
   useEffect(()=>{
     getShow();
   },[id])
@@ -34,10 +37,10 @@ const MovieDetails = () => {
     <h1 className='text-4xl font-semibold max-w-96 text-balance'>{show.movie.title}</h1>
     <div className='flex items-center gap-1 text-gray-300'>
       <StarIcon className='h-5 w-5 text-[#f84565] fill-[#f84565]' />
-      {show.movie.vote_average.toFixed(1)} User Rating
+      {Number(show.movie.vote_average || 0).toFixed(1)} User Rating
     </div>
     <p className='text-gray-400 mt-2 text-sm leading-tight max-w-xl'>{show.movie.overview}</p>
-    <p>{timeFormat(show.movie.runtime)} •  {show.movie.genres.map(genre => genre.name).join(", ")}  •  {new Date(show.movie.release_date).getFullYear()}</p>
+    <p>{timeFormat(show.movie.runtime)} •  {(show.movie.genres || []).map(genre => genre.name).join(", ")}  •  {new Date(show.movie.release_date).getFullYear()}</p>
 
     <div className='flex items-center gap-4 mt-4'>
       <button className='flex items-center gap-1 px-7 py-3 text-sm bg-gray-400 hover:bg-gray-900 transition rounded-md font medium cursor-pointer'>
@@ -50,19 +53,24 @@ const MovieDetails = () => {
     </div>
   </div>
 </div>
-<p className='text-lg font-medium mt-20'>Your Favorite Cast</p>
-<div className='overflow scrollwidth-none mt-8 pb-4'>
-<div className='flex items-center gap-4 w-max px-4 mt-4'>
-  {show.movie.casts.slice(0,9).map((cast,index)=>(
-    <div key={index} className='flex flex-col items-center '>
-       <img src={cast.profile_path} alt=""  className='rounded-full h20 md:h-20 aspect-square object-cover'/>
-       <p className='font-medium text-xs mt-3'>{cast.name}</p>
+{Array.isArray(show.movie.casts) && show.movie.casts.length > 0 && (
+  <>
+    <p className='text-lg font-medium mt-20'>Your Favorite Cast</p>
+    <div className='overflow scrollwidth-none mt-8 pb-4'>
+      <div className='flex items-center gap-4 w-max px-4 mt-4'>
+        {show.movie.casts.slice(0,9).map((cast,index)=>(
+          <div key={index} className='flex flex-col items-center '>
+            <img src={cast.profile_path} alt=""  className='rounded-full h20 md:h-20 aspect-square object-cover'/>
+            <p className='font-medium text-xs mt-3'>{cast.name}</p>
+          </div>
+        ))}
+      </div>
     </div>
-
-  ))}
-</div>
-</div>
+  </>
+)}
 <DateSelect dateTime={show.dateTime} id={id}/>
+
+<ReviewsSection movieId={id} />
 
 <p className='text-lg font-medium mt-20 mb-8'>You may also Like</p>
 <div className='flex justify-center gap-8'>

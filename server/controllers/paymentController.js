@@ -1,9 +1,12 @@
+const QRCode = require('qrcode');
 const { stripe, createCheckoutSession, retrieveSession } = require('../config/stripe');
 const Booking = require('../models/Booking');
 const Show = require('../models/Show');
 const User = require('../models/User');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { sendBookingConfirmation } = require('../services/emailService');
+
+const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim();
 
 const TIER_THRESHOLDS = [
   { tier: 'Platinum', points: 2000 },
@@ -21,7 +24,7 @@ function tierFor(points) {
  * the confirm endpoint and the webhook.
  */
 async function completeBooking(booking, paymentIntentId) {
-  if (booking.paymentStatus === 'completed') return booking; // already done
+  if (booking.paymentStatus === 'completed') return { booking, emailPreview: null }; // already done
 
   booking.paymentStatus = 'completed';
   booking.status = 'confirmed';
@@ -44,7 +47,21 @@ async function completeBooking(booking, paymentIntentId) {
   // loyalty: 10 points per dollar
   const earned = Math.round(booking.totalAmount * 10);
   const movie = await Booking.findById(booking._id).populate('movie').then((b) => b?.movie);
-  const user = await User.findOne({ clerkId: booking.userId });
+
+  // Ensure a user record exists so points always accrue (guests included).
+  let user = await User.findOne({ clerkId: booking.userId });
+  if (!user) {
+    try {
+      user = await User.create({
+        clerkId: booking.userId,
+        email: booking.userEmail,
+        firstName: booking.userName || 'Guest',
+        referralCode: `CINE${String(booking.userId).slice(-4).toUpperCase()}`,
+      });
+    } catch {
+      user = await User.findOne({ clerkId: booking.userId }); // race / dup — refetch
+    }
+  }
   if (user) {
     user.loyaltyPoints += earned;
     user.totalBookings += 1;
@@ -53,17 +70,34 @@ async function completeBooking(booking, paymentIntentId) {
     await user.save();
   }
 
+  // Generate the scannable QR ticket (encodes a verification URL staff can open
+  // at the door). Stored on the booking so the UI and email can both show it.
+  if (!booking.qrCode) {
+    try {
+      const verifyUrl = `${FRONTEND_URL}/verify/${booking.bookingCode}`;
+      booking.qrCode = await QRCode.toDataURL(verifyUrl, {
+        width: 320,
+        margin: 1,
+        color: { dark: '#0b0f1a', light: '#ffffff' },
+      });
+    } catch (err) {
+      console.warn('⚠ QR generation failed:', err.message);
+    }
+  }
+
   // confirmation email (non-blocking failure)
+  let emailPreview = null;
   if (!booking.emailSent) {
     const result = await sendBookingConfirmation({
       ...booking.toObject(),
       movieTitle: movie?.title,
     });
     if (result?.sent || result?.skipped) booking.emailSent = true;
+    emailPreview = result?.preview || null; // Ethereal preview URL (dev only)
   }
 
   await booking.save();
-  return booking;
+  return { booking, emailPreview };
 }
 
 /**
@@ -128,13 +162,38 @@ const confirmPayment = asyncHandler(async (req, res) => {
     throw new Error('Booking not found for this session.');
   }
 
-  await completeBooking(booking, session.payment_intent);
+  const { emailPreview } = await completeBooking(booking, session.payment_intent);
   const populated = await Booking.findById(booking._id)
     .populate({ path: 'show', populate: { path: 'movie' } })
     .populate('movie')
     .lean();
 
-  res.json({ success: true, booking: populated });
+  res.json({ success: true, booking: populated, emailPreview });
+});
+
+/**
+ * POST /api/payment/dev-confirm   (NON-PRODUCTION ONLY)
+ * body: { bookingId }
+ * Simulates a successful payment without Stripe — runs the exact same
+ * `completeBooking` path (seat locking, loyalty, confirmation email) so the
+ * whole booking flow is demoable and testable with zero external secrets.
+ * This route is only mounted when NODE_ENV !== 'production'.
+ */
+const devConfirmPayment = asyncHandler(async (req, res) => {
+  const { bookingId } = req.body;
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found.');
+  }
+
+  const { emailPreview } = await completeBooking(booking, `dev_pi_${booking._id}`);
+  const populated = await Booking.findById(booking._id)
+    .populate({ path: 'show', populate: { path: 'movie' } })
+    .populate('movie')
+    .lean();
+
+  res.json({ success: true, simulated: true, booking: populated, emailPreview });
 });
 
 /**
@@ -168,4 +227,4 @@ const handleWebhook = asyncHandler(async (req, res) => {
   res.json({ received: true });
 });
 
-module.exports = { createSession, confirmPayment, handleWebhook };
+module.exports = { createSession, confirmPayment, devConfirmPayment, handleWebhook };

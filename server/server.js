@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const connectDB = require('./config/db');
+const { ensureReady: initEmail } = require('./config/email');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { handleWebhook } = require('./controllers/paymentController');
 
@@ -65,9 +66,28 @@ const PORT = process.env.PORT || 5000;
 // Connect to DB, then start listening.
 connectDB()
   .then(() => {
-    app.listen(PORT, () => {
+    initEmail(); // warm up the email transporter (Ethereal/SMTP) in the background
+
+    const server = app.listen(PORT, () => {
       console.log(`\n🎬 CineSnap API running on http://localhost:${PORT}`);
       console.log(`   Health: http://localhost:${PORT}/api/health\n`);
+    });
+
+    // Friendly, actionable message instead of an unhandled 'error' crash.
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(
+          `\n✗ Port ${PORT} is already in use.\n` +
+            `  Another CineSnap server (or a leftover process) is still running.\n` +
+            `  Fix it with one of:\n` +
+            `    • Windows:  npx kill-port ${PORT}\n` +
+            `    • PowerShell: Get-NetTCPConnection -LocalPort ${PORT} | %{ Stop-Process -Id $_.OwningProcess -Force }\n` +
+            `    • Or set a different port:  PORT=5001 npm run dev\n`
+        );
+      } else {
+        console.error('✗ Server error:', err.message);
+      }
+      process.exit(1);
     });
   })
   .catch((err) => {

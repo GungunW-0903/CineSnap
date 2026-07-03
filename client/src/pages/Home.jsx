@@ -3,6 +3,7 @@ import HeroSection from '../components/HeroSection'
 import ExperienceHighlights from '../components/ExperienceHighlights'
 import StatsSection from '../components/StatsSection'
 import FeaturedSection from '../components/FeaturedSection'
+import TrendingSection from '../components/TrendingSection'
 import Timeline from '../components/Timeline'
 
 // Below-the-fold + heavy sections are code-split so the initial payload
@@ -30,6 +31,7 @@ const Home = () => {
       <ExperienceHighlights />
       <StatsSection />
       <FeaturedSection />
+      <TrendingSection />
       <Timeline />
       <Suspense fallback={<SectionFallback />}>
         <TrailerSection />

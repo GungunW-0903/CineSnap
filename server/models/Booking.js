@@ -33,6 +33,16 @@ const BookingSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  originalAmount: {
+    type: Number
+  },
+  promoCode: {
+    type: String
+  },
+  discount: {
+    type: Number,
+    default: 0
+  },
   currency: {
     type: String,
     default: 'usd'
