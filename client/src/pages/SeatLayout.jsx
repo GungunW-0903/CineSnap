@@ -5,7 +5,7 @@ import { ClockIcon,ArrowRightIcon } from 'lucide-react'
 import BlurCircle from '../components/BlurCircle'
 import { assets } from '../assets/assets'
 import toast from 'react-hot-toast'
-import { useUser } from '@clerk/clerk-react'
+import { useAuthUser } from '../lib/authUser'
 import { fetchShowsForMovie, fetchShowById, createBooking } from '../lib/api'
 
 // Times come from the backend as "11:00 AM"; sample data uses ISO strings.
@@ -19,7 +19,7 @@ function formatTime(t) {
 const SeatLayout = () => {
   const groupRows = [["A","B"],["C","D"],["E","F"],["G","H"],["I","J"]]
   const { id,date } =useParams()
-  const { user } = useUser()
+  const { user } = useAuthUser()
   const [selectedSeats,setSelectedSeats] =useState([])
   const [selectedTime,setSelectedTime] =useState(null)
   const [occupied,setOccupied] =useState([])

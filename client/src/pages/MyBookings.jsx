@@ -3,13 +3,13 @@ import Loading from '../components/Loading'
 import BlurCircle from '../components/BlurCircle'
 import timeFormat from '../lib/timeFormat'
 import toast from 'react-hot-toast'
-import { useUser } from '@clerk/clerk-react'
+import { useAuthUser } from '../lib/authUser'
 import { fetchMyBookings, confirmBookingPayment, cancelBooking } from '../lib/api'
 import { useProfile } from '../context/ProfileContext'
 
 const MyBookings = () => {
   const currency = import.meta.env.VITE_CURRENCY || '$'
-  const { user } = useUser()
+  const { user } = useAuthUser()
   const { refresh } = useProfile()
   const [bookings, setBookings] = useState([])
   const [isLoading, setIsLoading] = useState(true)

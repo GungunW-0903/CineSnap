@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
+import { useAuthUser } from '../lib/authUser'
 import toast from 'react-hot-toast'
 import { CreditCardIcon, ShieldCheckIcon, TicketIcon, ZapIcon, LockIcon } from 'lucide-react'
 import BlurCircle from '../components/BlurCircle'
@@ -13,7 +13,7 @@ const currency = import.meta.env.VITE_CURRENCY || '$'
 
 const Checkout = () => {
   const { bookingId } = useParams()
-  const { user } = useUser()
+  const { user } = useAuthUser()
   const { refresh } = useProfile()
   const navigate = useNavigate()
 

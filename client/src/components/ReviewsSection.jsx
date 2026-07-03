@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useUser } from '@clerk/clerk-react'
+import { useAuthUser } from '../lib/authUser'
 import toast from 'react-hot-toast'
 import { StarIcon, ThumbsUp } from 'lucide-react'
 import { fetchMovieReviews, submitReview, likeReview } from '../lib/api'
@@ -31,7 +31,7 @@ const Stars = ({ value, onChange, size = 'w-6 h-6' }) => {
 }
 
 const ReviewsSection = ({ movieId }) => {
-  const { user } = useUser()
+  const { user } = useAuthUser()
   const [data, setData] = useState({ reviews: [], count: 0, average: null })
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { useUser } from '@clerk/clerk-react'
+import { useAuthUser } from '../lib/authUser'
 import { syncUser, fetchUserProfile } from '../lib/api'
 
 // Loyalty tier thresholds — mirrors the backend so we can show progress.
@@ -25,7 +25,7 @@ const ProfileContext = createContext({ profile: null, loading: true, refresh: ()
 export const useProfile = () => useContext(ProfileContext)
 
 export const ProfileProvider = ({ children }) => {
-  const { user, isLoaded } = useUser()
+  const { user, isLoaded } = useAuthUser()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 

@@ -41,6 +41,15 @@ jobs:
         working-directory: client
         env:
           GITHUB_PAGES: true
+          # Set these as repository Variables (Settings → Secrets and variables →
+          # Actions → Variables). They are public by design (Vite inlines VITE_*
+          # into the client bundle), so Variables — not Secrets — are correct.
+          #   VITE_API_BASE_URL          → https://<your-backend-host>/api
+          #   VITE_CLERK_PUBLISHABLE_KEY → pk_test_… (or pk_live_…)
+          #   VITE_CURRENCY              → $  (optional)
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
+          VITE_CURRENCY: ${{ vars.VITE_CURRENCY }}
         run: npm run build
 
       - name: Add SPA fallback
