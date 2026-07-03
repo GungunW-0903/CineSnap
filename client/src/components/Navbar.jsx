@@ -2,8 +2,8 @@ import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { assets } from '../assets/assets'
 import { SearchIcon, XIcon, MenuIcon, TicketPlus, Sparkles, Crown } from 'lucide-react'
-import { UserButton } from '@clerk/clerk-react'
 import { useAuthUser } from '../lib/authUser'
+import { LogOut } from 'lucide-react'
 import { useProfile, tierInfo } from '../context/ProfileContext'
 
 // Loyalty points + tier badge — links to the Rewards page.
@@ -52,17 +52,15 @@ const AuthControls = () => {
     )
   }
 
-  // Clerk is configured and user is signed in — show the profile menu.
+  // Clerk is configured and user is signed in — show a profile menu button.
   return (
-    <UserButton>
-      <UserButton.MenuItems>
-        <UserButton.Action
-          label='My Bookings'
-          labelIcon={<TicketPlus width={15} />}
-          onClick={() => navigate('/my-bookings')}
-        />
-      </UserButton.MenuItems>
-    </UserButton>
+    <button
+      onClick={() => navigate('/my-bookings')}
+      className='hidden md:flex items-center gap-2 rounded-full px-4 py-2 border border-white/20 hover:border-white/40 transition cursor-pointer text-sm'
+    >
+      <TicketPlus className='w-4 h-4' />
+      My Bookings
+    </button>
   )
 }
 
