@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useUser } from '@clerk/clerk-react'
+import { useAuthUser } from '../lib/authUser'
 import { fetchFavorites, toggleFavoriteApi } from '../lib/api'
 
 /**
@@ -33,7 +33,7 @@ function write(list) {
 }
 
 export default function useFavorites() {
-  const { user } = useUser()
+  const { user } = useAuthUser()
   const [favorites, setFavorites] = useState(read)
 
   // Keep every hook instance (and other tabs) in sync via events.
