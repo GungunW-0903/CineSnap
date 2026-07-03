@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { assets } from '../assets/assets'
 import { SearchIcon, XIcon, MenuIcon, TicketPlus, Sparkles, Crown } from 'lucide-react'
-import { useUser, useClerk, UserButton } from '@clerk/clerk-react'
+import { UserButton } from '@clerk/clerk-react'
+import { useAuthUser } from '../lib/authUser'
 import { useProfile, tierInfo } from '../context/ProfileContext'
 
 // Loyalty points + tier badge — links to the Rewards page.
@@ -36,19 +37,22 @@ const navLinks = [
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 const AuthControls = () => {
-  const { user } = useUser()
-  const { openSignIn } = useClerk()
+  // Only call Clerk hooks if Clerk is actually configured.
+  const { user } = useAuthUser()
   const navigate = useNavigate()
 
   if (!user) {
+    // If we can't use Clerk (not configured), don't try to sign in — just
+    // show an "Explore" button. useAuthUser() returns null when Clerk isn't set.
     return (
-      <button onClick={openSignIn} className='btn-cinesnap text-sm px-4 py-2 md:px-5 md:py-2.5'>
+      <button onClick={() => navigate('/movies')} className='btn-cinesnap text-sm px-4 py-2 md:px-5 md:py-2.5'>
         <Sparkles className='w-4 h-4' />
-        Join Now
+        Explore
       </button>
     )
   }
 
+  // Clerk is configured and user is signed in — show the profile menu.
   return (
     <UserButton>
       <UserButton.MenuItems>
