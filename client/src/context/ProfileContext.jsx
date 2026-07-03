@@ -41,13 +41,27 @@ export const ProfileProvider = ({ children }) => {
     async function boot() {
       setLoading(true)
       // Sync creates the user (Clerk or guest) so points/referrals accrue,
-      // then load the profile.
-      await syncUser(user)
-      const p = await fetchUserProfile(user)
-      if (!cancelled) {
-        setProfile(p)
-        setLoading(false)
+      // then load the profile. Wrapped in a 2s timeout so the page doesn't hang
+      // on GitHub Pages (no backend). If sync/profile fail or timeout, page
+      // still loads with null profile (graceful fallback).
+      try {
+        await Promise.race([
+          syncUser(user),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('sync timeout')), 2000))
+        ])
+      } catch {
+        // Sync failed or timed out — that's ok, proceed without it
       }
+      try {
+        const p = await Promise.race([
+          fetchUserProfile(user),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('profile timeout')), 2000))
+        ])
+        if (!cancelled) setProfile(p)
+      } catch {
+        // Profile fetch failed or timed out — still ok
+      }
+      if (!cancelled) setLoading(false)
     }
     boot()
     return () => { cancelled = true }
