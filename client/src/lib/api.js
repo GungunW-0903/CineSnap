@@ -16,8 +16,7 @@ function dedupeById(list) {
   })
 }
 
-// Try the backend with a short timeout; fall back to sample data on any failure.
-async function tryFetch(path, { timeout = 4000 } = {}) {
+async function fetchWithTimeout(path, timeout) {
   const controller = new AbortController()
   const id = setTimeout(() => controller.abort(), timeout)
   try {
@@ -26,6 +25,21 @@ async function tryFetch(path, { timeout = 4000 } = {}) {
     return await res.json()
   } finally {
     clearTimeout(id)
+  }
+}
+
+// Try the backend, falling back to sample data on failure. Render's free tier
+// spins down after inactivity and can take 50+ seconds to wake up, so a first
+// attempt that aborts (rather than a real 4xx/5xx) gets one retry with a much
+// longer timeout before we give up and use bundled sample data.
+async function tryFetch(path, { timeout = 6000 } = {}) {
+  try {
+    return await fetchWithTimeout(path, timeout)
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return await fetchWithTimeout(path, 55000)
+    }
+    throw err
   }
 }
 
@@ -75,9 +89,7 @@ export async function fetchMovieById(id) {
 // Shows, bookings & payment
 // ---------------------------------------------------------------------------
 
-// Authenticated JSON request. Throws on a non-2xx so callers can surface the
-// backend's error message. `user` is an optional Clerk user for identity.
-async function request(path, { method = 'GET', body, user, timeout = 8000 } = {}) {
+async function requestOnce(path, { method, body, user, timeout }) {
   const controller = new AbortController()
   const id = setTimeout(() => controller.abort(), timeout)
   try {
@@ -99,6 +111,21 @@ async function request(path, { method = 'GET', body, user, timeout = 8000 } = {}
     return data
   } finally {
     clearTimeout(id)
+  }
+}
+
+// Authenticated JSON request. Throws on a non-2xx so callers can surface the
+// backend's error message. `user` is an optional Clerk user for identity.
+// Retries once with a long timeout if the first attempt aborts — Render's
+// free tier can take 50+ seconds to wake from a cold start.
+async function request(path, { method = 'GET', body, user, timeout = 8000 } = {}) {
+  try {
+    return await requestOnce(path, { method, body, user, timeout })
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return await requestOnce(path, { method, body, user, timeout: 55000 })
+    }
+    throw err
   }
 }
 
