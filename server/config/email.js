@@ -32,17 +32,29 @@ function looksReal(user, pass) {
 async function init() {
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASSWORD;
+  const host = process.env.EMAIL_HOST; // set this for non-Gmail SMTP relays (Brevo, SendGrid, Mailgun, ...)
 
   // 1. Real SMTP
   if (looksReal(user, pass)) {
-    transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: { user, pass },
-    });
+    // Gmail's SMTP silently times out most connections from cloud-host IP
+    // ranges (Render, AWS, etc.) as an anti-abuse measure — EMAIL_HOST lets
+    // ops point at a relay provider's SMTP server instead of Gmail directly.
+    const transportConfig = host
+      ? {
+          host,
+          port: Number(process.env.EMAIL_PORT) || 587,
+          secure: process.env.EMAIL_SECURE === 'true',
+          auth: { user, pass },
+        }
+      : {
+          service: process.env.EMAIL_SERVICE || 'gmail',
+          auth: { user, pass },
+        };
+    transporter = nodemailer.createTransport(transportConfig);
     try {
       await transporter.verify();
       mode = 'smtp';
-      console.log(`✓ Email ready (SMTP as ${user})`);
+      console.log(`✓ Email ready (SMTP as ${user}${host ? ` via ${host}` : ''})`);
       return transporter;
     } catch (err) {
       console.warn(`⚠ SMTP verification failed (${err.message}). Falling back…`);
@@ -74,9 +86,19 @@ async function init() {
   return null;
 }
 
-/** Lazily initialize (once) and return the transporter (or null). */
+/**
+ * Lazily initialize and return the transporter (or null). A successful init
+ * is cached forever, but a failed one is retried on the next call instead of
+ * disabling email for the rest of the process's life — useful if the relay
+ * had a transient hiccup.
+ */
 function ensureReady() {
-  if (!initPromise) initPromise = init();
+  if (transporter) return Promise.resolve(transporter);
+  if (!initPromise) {
+    initPromise = init().finally(() => {
+      if (!transporter) initPromise = null;
+    });
+  }
   return initPromise;
 }
 
