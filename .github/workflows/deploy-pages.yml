@@ -37,11 +37,6 @@ jobs:
         working-directory: client
         run: npm ci
 
-      - name: Check variables (debug)
-        run: |
-          if [ -n "${{ vars.VITE_API_BASE_URL }}" ]; then echo "VITE_API_BASE_URL is SET"; else echo "VITE_API_BASE_URL is EMPTY/MISSING"; fi
-          if [ -n "${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}" ]; then echo "VITE_CLERK_PUBLISHABLE_KEY is SET"; else echo "VITE_CLERK_PUBLISHABLE_KEY is EMPTY/MISSING"; fi
-
       - name: Build
         working-directory: client
         env:
