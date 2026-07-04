@@ -14,11 +14,64 @@ function frontendUrl() {
   return process.env.FRONTEND_URL || 'http://localhost:5173';
 }
 
+function parseFrom(fromStr) {
+  const m = /^(.*)<(.+)>$/.exec(fromStr || '');
+  if (m) return { name: m[1].trim().replace(/^"|"$/g, ''), email: m[2].trim() };
+  return { email: (fromStr || '').trim() };
+}
+
+/**
+ * Send via Brevo's HTTPS API (port 443) instead of raw SMTP — cloud hosts
+ * like Render silently drop outbound SMTP (ports 587/465) even to non-Gmail
+ * relays, so plain nodemailer SMTP never gets through from there. Returns
+ * null (not an error) when BREVO_API_KEY isn't set, so callers fall back.
+ */
+async function sendViaBrevoApi({ to, subject, html, attachments }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) return null;
+
+  const payload = {
+    sender: parseFrom(EMAIL_FROM),
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+  };
+  if (attachments?.length) {
+    payload.attachment = attachments.map((a) => ({
+      name: a.filename,
+      content: Buffer.isBuffer(a.content) ? a.content.toString('base64') : a.content,
+    }));
+  }
+
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': apiKey, 'Content-Type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Brevo API ${res.status}: ${body}`);
+  }
+  const data = await res.json().catch(() => ({}));
+  return { sent: true, messageId: data.messageId };
+}
+
 /**
  * Core send helper. Never throws into the request path — failures are logged
- * and swallowed so a flaky SMTP server can't break a booking.
+ * and swallowed so a flaky mail provider can't break a booking.
  */
 async function send({ to, subject, html, attachments }) {
+  try {
+    const viaApi = await sendViaBrevoApi({ to, subject, html, attachments });
+    if (viaApi) {
+      console.log(`✓ Email sent via Brevo API → ${to} (${viaApi.messageId})`);
+      return viaApi;
+    }
+  } catch (err) {
+    console.error(`✗ Brevo API send failed → ${to}:`, err.message);
+    return { error: err.message };
+  }
+
   const transporter = await ensureReady();
   if (!transporter) {
     console.log(`✉ [email skipped] → ${to} | ${subject}`);
