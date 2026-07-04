@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { assets } from '../assets/assets'
 import { SearchIcon, XIcon, MenuIcon, TicketPlus, Sparkles, Crown } from 'lucide-react'
 import { useAuthUser } from '../lib/authUser'
+import { useClerk } from '@clerk/clerk-react'
 import { LogOut } from 'lucide-react'
 import { useProfile, tierInfo } from '../context/ProfileContext'
 
@@ -37,17 +38,17 @@ const navLinks = [
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 const AuthControls = () => {
-  // Only call Clerk hooks if Clerk is actually configured.
+  // AuthControls only renders when clerkEnabled is true (see below), so
+  // ClerkProvider is guaranteed to be mounted here — safe to call useClerk().
   const { user } = useAuthUser()
+  const { openSignIn } = useClerk()
   const navigate = useNavigate()
 
   if (!user) {
-    // If we can't use Clerk (not configured), don't try to sign in — just
-    // show an "Explore" button. useAuthUser() returns null when Clerk isn't set.
     return (
-      <button onClick={() => navigate('/movies')} className='btn-cinesnap text-sm px-4 py-2 md:px-5 md:py-2.5'>
+      <button onClick={() => openSignIn()} className='btn-cinesnap text-sm px-4 py-2 md:px-5 md:py-2.5'>
         <Sparkles className='w-4 h-4' />
-        Explore
+        Join Now
       </button>
     )
   }
