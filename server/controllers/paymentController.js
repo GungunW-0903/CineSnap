@@ -6,7 +6,11 @@ const User = require('../models/User');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { sendBookingConfirmation } = require('../services/emailService');
 
-const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim();
+// Read fresh on every call, not cached at require()-time — a bare env-var
+// update (no code deploy) wouldn't otherwise reach an already-running process.
+function frontendUrl() {
+  return (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim();
+}
 
 const TIER_THRESHOLDS = [
   { tier: 'Platinum', points: 2000 },
@@ -74,7 +78,7 @@ async function completeBooking(booking, paymentIntentId) {
   // at the door). Stored on the booking so the UI and email can both show it.
   if (!booking.qrCode) {
     try {
-      const verifyUrl = `${FRONTEND_URL}/verify/${booking.bookingCode}`;
+      const verifyUrl = `${frontendUrl()}/verify/${booking.bookingCode}`;
       booking.qrCode = await QRCode.toDataURL(verifyUrl, {
         width: 320,
         margin: 1,

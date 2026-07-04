@@ -8,7 +8,11 @@ const BRAND = {
   bg: '#070b14',
 };
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+// Read fresh on every call, not cached at require()-time — a bare env-var
+// update (no code deploy) wouldn't otherwise reach an already-running process.
+function frontendUrl() {
+  return process.env.FRONTEND_URL || 'http://localhost:5173';
+}
 
 /**
  * Core send helper. Never throws into the request path — failures are logged
@@ -100,7 +104,7 @@ async function sendBookingConfirmation(booking) {
     </div>
     ${qrBlock}
     <p style="color:#8a94a8;font-size:13px;margin:18px 0 0;">Show this QR at the door — no printing needed.</p>
-    ${btn('View my bookings', `${FRONTEND_URL}/my-bookings`)}
+    ${btn('View my bookings', `${frontendUrl()}/my-bookings`)}
   `;
   return send({
     to: booking.userEmail,
@@ -121,7 +125,7 @@ async function sendLoginAlert({ to, name, when, device }) {
       ${device ? `<div style="padding:4px 0;"><span style="color:#8a94a8;">Device:</span> ${device}</div>` : ''}
     </div>
     <p style="color:#8a94a8;font-size:13px;margin:16px 0 0;">If this wasn't you, please secure your account.</p>
-    ${btn('Go to CineSnap', FRONTEND_URL)}
+    ${btn('Go to CineSnap', frontendUrl())}
   `;
   return send({
     to,
@@ -143,7 +147,7 @@ async function sendWelcomeEmail({ to, name }) {
       <li>Save favorites to your watchlist</li>
       <li>Lock your perfect seats before they sell out</li>
     </ul>
-    ${btn('Explore movies', `${FRONTEND_URL}/movies`)}
+    ${btn('Explore movies', `${frontendUrl()}/movies`)}
   `;
   return send({
     to,
