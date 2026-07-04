@@ -1,12 +1,21 @@
 import { ArrowRight } from 'lucide-react'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BlurCircle from './BlurCircle'
-import { dummyShowsData } from '../assets/assets'
+import { fetchMovies } from '../lib/api'
 import MovieCard from './MovieCard'
 
 const FeaturedSection = () => {
   const navigate = useNavigate()
+  const [movies, setMovies] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchMovies().then((list) => { if (!cancelled) setMovies(list) })
+    return () => { cancelled = true }
+  }, [])
+
+  if (!movies.length) return null
 
   return (
     <section className='relative section-shell overflow-hidden py-18'>
@@ -34,7 +43,7 @@ const FeaturedSection = () => {
       </p>
 
       <div className='grid sm:grid-cols-2 xl:grid-cols-4 gap-6 mt-10 reveal-up reveal-delay-2'>
-        {dummyShowsData.slice(0, 4).map((show) => (
+        {movies.slice(0, 4).map((show) => (
           <MovieCard key={show._id} movie={show} />
         ))}
       </div>
