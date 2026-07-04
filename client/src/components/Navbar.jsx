@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { assets } from '../assets/assets'
 import { SearchIcon, XIcon, MenuIcon, TicketPlus, Sparkles, Crown } from 'lucide-react'
 import { useAuthUser } from '../lib/authUser'
-import { useClerk } from '@clerk/clerk-react'
+import { useClerk, UserButton } from '@clerk/clerk-react'
 import { LogOut } from 'lucide-react'
 import { useProfile, tierInfo } from '../context/ProfileContext'
 
@@ -53,15 +53,23 @@ const AuthControls = () => {
     )
   }
 
-  // Clerk is configured and user is signed in — show a profile menu button.
+  // Clerk is configured and user is signed in — quick "My Bookings" link plus
+  // the avatar menu, which is what actually exposes account settings/sign out.
   return (
-    <button
-      onClick={() => navigate('/my-bookings')}
-      className='hidden md:flex items-center gap-2 rounded-full px-4 py-2 border border-white/20 hover:border-white/40 transition cursor-pointer text-sm'
-    >
-      <TicketPlus className='w-4 h-4' />
-      My Bookings
-    </button>
+    <div className='flex items-center gap-3'>
+      <button
+        onClick={() => navigate('/my-bookings')}
+        className='hidden md:flex items-center gap-2 rounded-full px-4 py-2 border border-white/20 hover:border-white/40 transition cursor-pointer text-sm'
+      >
+        <TicketPlus className='w-4 h-4' />
+        My Bookings
+      </button>
+      <UserButton afterSignOutUrl='/'>
+        <UserButton.MenuItems>
+          <UserButton.Link label='My Bookings' labelIcon={<TicketPlus className='w-4 h-4' />} href='/my-bookings' />
+        </UserButton.MenuItems>
+      </UserButton>
+    </div>
   )
 }
 
