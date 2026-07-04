@@ -128,14 +128,18 @@ async function sendBookingConfirmation(booking) {
   let qrBlock = '';
   if (booking.qrCode && booking.qrCode.startsWith('data:image')) {
     const base64 = booking.qrCode.split(',')[1];
+    // Brevo's HTTPS API has no separate cid field like nodemailer's SMTP
+    // transport — it links inline images by matching cid: to the attachment's
+    // filename directly, so both must use the same identifier here.
+    const qrFilename = 'ticketqr.png';
     attachments.push({
-      filename: 'cinesnap-ticket-qr.png',
+      filename: qrFilename,
       content: Buffer.from(base64, 'base64'),
-      cid: 'ticketqr',
+      cid: qrFilename,
     });
     qrBlock = `
     <div style="text-align:center;margin-top:22px;padding:20px;background:#ffffff;border-radius:16px;">
-      <img src="cid:ticketqr" width="200" height="200" alt="Ticket QR code" style="display:block;margin:0 auto;" />
+      <img src="cid:${qrFilename}" width="200" height="200" alt="Ticket QR code" style="display:block;margin:0 auto;" />
       <p style="color:#0b0f1a;font-size:12px;margin:12px 0 0;font-weight:600;">Scan at the door to check in</p>
       <p style="color:#5b6680;font-size:11px;margin:4px 0 0;font-family:monospace;">${booking.bookingCode}</p>
     </div>`;
