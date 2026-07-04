@@ -172,12 +172,13 @@ const confirmPayment = asyncHandler(async (req, res) => {
 });
 
 /**
- * POST /api/payment/dev-confirm   (NON-PRODUCTION ONLY)
+ * POST /api/payment/dev-confirm
  * body: { bookingId }
  * Simulates a successful payment without Stripe — runs the exact same
  * `completeBooking` path (seat locking, loyalty, confirmation email) so the
  * whole booking flow is demoable and testable with zero external secrets.
- * This route is only mounted when NODE_ENV !== 'production'.
+ * This backs the checkout page's "Demo Payment" option, so it's mounted in
+ * every environment.
  */
 const devConfirmPayment = asyncHandler(async (req, res) => {
   const { bookingId } = req.body;

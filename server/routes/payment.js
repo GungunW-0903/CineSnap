@@ -9,9 +9,9 @@ const {
 router.post('/create-checkout-session', createSession);
 router.post('/confirm', confirmPayment);
 
-// Simulated payment for local dev / demos — never exposed in production.
-if (process.env.NODE_ENV !== 'production') {
-  router.post('/dev-confirm', devConfirmPayment);
-}
+// Simulated payment — the checkout page always offers this as "Demo Payment"
+// (no card required), so it must stay mounted in every environment, not just
+// local dev, or that button 404s once deployed.
+router.post('/dev-confirm', devConfirmPayment);
 
 module.exports = router;
