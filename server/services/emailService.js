@@ -28,7 +28,12 @@ function parseFrom(fromStr) {
  */
 async function sendViaBrevoApi({ to, subject, html, attachments }) {
   const apiKey = process.env.BREVO_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    // Missing silently otherwise — this is the one env var that must be set
+    // in production, since Render blocks outbound SMTP entirely (see send()).
+    console.warn('⚠ BREVO_API_KEY not set — falling back to SMTP, which will not work on Render.');
+    return null;
+  }
 
   const payload = {
     sender: parseFrom(EMAIL_FROM),
@@ -92,30 +97,54 @@ async function send({ to, subject, html, attachments }) {
   }
 }
 
-/** Shared HTML shell so every email is on-brand. */
+/**
+ * Shared HTML shell so every email is on-brand. Built from nested <table>s
+ * instead of styled <div>s — Outlook desktop (Word rendering engine) and many
+ * corporate spam scanners strip div/flex-based layouts and gradients, which
+ * can leave a "sent successfully" email looking blank or broken on arrival.
+ * Tables + inline styles + a plain background colour render consistently
+ * across Gmail, Outlook, Apple Mail and mobile clients.
+ */
 function shell(title, bodyHtml) {
   return `
-  <div style="margin:0;padding:0;background:${BRAND.bg};font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-    <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
-      <div style="text-align:center;margin-bottom:24px;">
-        <span style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#fff;">
-          Cine<span style="color:${BRAND.accent};">Snap</span>
-        </span>
-      </div>
-      <div style="background:linear-gradient(160deg,#121829,#0d1320);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:32px;">
-        <h1 style="margin:0 0 8px;font-size:22px;color:#fff;">${title}</h1>
-        ${bodyHtml}
-      </div>
-      <p style="text-align:center;color:#5b6680;font-size:12px;margin-top:24px;">
-        © ${'2026'} CineSnap · Booked in seconds.<br/>
-        You're receiving this because you have a CineSnap account.
-      </p>
-    </div>
-  </div>`;
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f2f3f5;padding:32px 0;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
+          <tr>
+            <td align="center" style="padding-bottom:20px;">
+              <span style="font-size:24px;font-weight:800;letter-spacing:-0.5px;color:#15181f;">
+                Cine<span style="color:${BRAND.accent};">Snap</span>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:32px;">
+              <h1 style="margin:0 0 16px;font-size:20px;color:#15181f;">${title}</h1>
+              ${bodyHtml}
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:20px;color:#8a94a8;font-size:12px;line-height:1.6;">
+              © 2026 CineSnap · Booked in seconds.<br/>
+              You're receiving this because you have a CineSnap account.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>`;
 }
 
 function btn(label, href) {
-  return `<a href="${href}" style="display:inline-block;margin-top:20px;padding:13px 26px;border-radius:9999px;background:linear-gradient(95deg,${BRAND.accent},${BRAND.gold});color:#fff;text-decoration:none;font-weight:700;font-size:14px;">${label}</a>`;
+  return `
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+    <tr>
+      <td align="center" bgcolor="${BRAND.accent}" style="border-radius:9999px;">
+        <a href="${href}" style="display:inline-block;padding:13px 26px;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">${label}</a>
+      </td>
+    </tr>
+  </table>`;
 }
 
 /** Booking confirmation (sent after successful payment). */
@@ -138,27 +167,29 @@ async function sendBookingConfirmation(booking) {
       cid: qrFilename,
     });
     qrBlock = `
-    <div style="text-align:center;margin-top:22px;padding:20px;background:#ffffff;border-radius:16px;">
-      <img src="cid:${qrFilename}" width="200" height="200" alt="Ticket QR code" style="display:block;margin:0 auto;" />
-      <p style="color:#0b0f1a;font-size:12px;margin:12px 0 0;font-weight:600;">Scan at the door to check in</p>
-      <p style="color:#5b6680;font-size:11px;margin:4px 0 0;font-family:monospace;">${booking.bookingCode}</p>
-    </div>`;
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;">
+      <tr>
+        <td align="center" bgcolor="#f7f7f8" style="border:1px solid #e5e7eb;border-radius:14px;padding:20px;">
+          <img src="cid:${qrFilename}" width="200" height="200" alt="Ticket QR code" style="display:block;margin:0 auto;" />
+          <p style="color:#15181f;font-size:12px;margin:12px 0 0;font-weight:600;">Scan at the door to check in</p>
+          <p style="color:#6b7280;font-size:11px;margin:4px 0 0;font-family:monospace;">${booking.bookingCode}</p>
+        </td>
+      </tr>
+    </table>`;
   }
 
   const body = `
-    <p style="color:#c4ccda;font-size:15px;line-height:1.6;margin:0 0 20px;">
+    <p style="color:#3f4653;font-size:15px;line-height:1.6;margin:0 0 20px;">
       Hi ${booking.userName || 'there'}, your tickets are confirmed. 🎬
     </p>
-    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px;">
-      <table style="width:100%;border-collapse:collapse;color:#fff;font-size:14px;">
-        <tr><td style="padding:6px 0;color:#8a94a8;">Movie</td><td style="padding:6px 0;text-align:right;font-weight:600;">${booking.movieTitle || 'Your movie'}</td></tr>
-        <tr><td style="padding:6px 0;color:#8a94a8;">Date</td><td style="padding:6px 0;text-align:right;">${booking.showDate}</td></tr>
-        <tr><td style="padding:6px 0;color:#8a94a8;">Time</td><td style="padding:6px 0;text-align:right;">${booking.showTime}</td></tr>
-        <tr><td style="padding:6px 0;color:#8a94a8;">Seats</td><td style="padding:6px 0;text-align:right;font-weight:600;">${seats}</td></tr>
-        <tr><td style="padding:6px 0;color:#8a94a8;">Total paid</td><td style="padding:6px 0;text-align:right;font-weight:700;color:${BRAND.gold};">$${Number(booking.totalAmount).toFixed(2)}</td></tr>
-        <tr><td style="padding:6px 0;color:#8a94a8;">Booking code</td><td style="padding:6px 0;text-align:right;font-family:monospace;">${booking.bookingCode}</td></tr>
-      </table>
-    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f8;border:1px solid #e5e7eb;border-radius:14px;">
+      <tr><td style="padding:14px 20px 0;color:#8a94a8;font-size:13px;">Movie</td><td style="padding:14px 20px 0;text-align:right;font-weight:600;color:#15181f;font-size:13px;">${booking.movieTitle || 'Your movie'}</td></tr>
+      <tr><td style="padding:8px 20px 0;color:#8a94a8;font-size:13px;">Date</td><td style="padding:8px 20px 0;text-align:right;color:#15181f;font-size:13px;">${booking.showDate}</td></tr>
+      <tr><td style="padding:8px 20px 0;color:#8a94a8;font-size:13px;">Time</td><td style="padding:8px 20px 0;text-align:right;color:#15181f;font-size:13px;">${booking.showTime}</td></tr>
+      <tr><td style="padding:8px 20px 0;color:#8a94a8;font-size:13px;">Seats</td><td style="padding:8px 20px 0;text-align:right;font-weight:600;color:#15181f;font-size:13px;">${seats}</td></tr>
+      <tr><td style="padding:8px 20px 0;color:#8a94a8;font-size:13px;">Total paid</td><td style="padding:8px 20px 0;text-align:right;font-weight:700;color:${BRAND.accent};font-size:13px;">$${Number(booking.totalAmount).toFixed(2)}</td></tr>
+      <tr><td style="padding:8px 20px 14px;color:#8a94a8;font-size:13px;">Booking code</td><td style="padding:8px 20px 14px;text-align:right;font-family:monospace;color:#15181f;font-size:13px;">${booking.bookingCode}</td></tr>
+    </table>
     ${qrBlock}
     <p style="color:#8a94a8;font-size:13px;margin:18px 0 0;">Show this QR at the door — no printing needed.</p>
     ${btn('View my bookings', `${frontendUrl()}/my-bookings`)}
@@ -174,13 +205,13 @@ async function sendBookingConfirmation(booking) {
 /** Login / sign-in alert. */
 async function sendLoginAlert({ to, name, when, device }) {
   const body = `
-    <p style="color:#c4ccda;font-size:15px;line-height:1.6;margin:0 0 16px;">
+    <p style="color:#3f4653;font-size:15px;line-height:1.6;margin:0 0 16px;">
       Hi ${name || 'there'}, you just signed in to CineSnap.
     </p>
-    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px;color:#fff;font-size:14px;">
-      <div style="padding:4px 0;"><span style="color:#8a94a8;">When:</span> ${when || 'just now'}</div>
-      ${device ? `<div style="padding:4px 0;"><span style="color:#8a94a8;">Device:</span> ${device}</div>` : ''}
-    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f8;border:1px solid #e5e7eb;border-radius:14px;">
+      <tr><td style="padding:14px 20px;color:#8a94a8;font-size:13px;">When</td><td style="padding:14px 20px;text-align:right;color:#15181f;font-size:13px;">${when || 'just now'}</td></tr>
+      ${device ? `<tr><td style="padding:0 20px 14px;color:#8a94a8;font-size:13px;">Device</td><td style="padding:0 20px 14px;text-align:right;color:#15181f;font-size:13px;">${device}</td></tr>` : ''}
+    </table>
     <p style="color:#8a94a8;font-size:13px;margin:16px 0 0;">If this wasn't you, please secure your account.</p>
     ${btn('Go to CineSnap', frontendUrl())}
   `;
@@ -194,12 +225,12 @@ async function sendLoginAlert({ to, name, when, device }) {
 /** Welcome email on first registration. */
 async function sendWelcomeEmail({ to, name }) {
   const body = `
-    <p style="color:#c4ccda;font-size:15px;line-height:1.6;margin:0 0 16px;">
+    <p style="color:#3f4653;font-size:15px;line-height:1.6;margin:0 0 16px;">
       Welcome to CineSnap, ${name || 'movie lover'}! 🍿 You're all set to discover trending films
       and book seats in seconds.
     </p>
     <p style="color:#8a94a8;font-size:14px;margin:0;">Here's what you can do next:</p>
-    <ul style="color:#c4ccda;font-size:14px;line-height:1.8;">
+    <ul style="color:#3f4653;font-size:14px;line-height:1.8;margin:8px 0 0;padding-left:20px;">
       <li>Browse what's now showing</li>
       <li>Save favorites to your watchlist</li>
       <li>Lock your perfect seats before they sell out</li>

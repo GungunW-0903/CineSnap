@@ -96,7 +96,12 @@ async function completeBooking(booking, paymentIntentId) {
       ...booking.toObject(),
       movieTitle: movie?.title,
     });
-    if (result?.sent || result?.skipped) booking.emailSent = true;
+    // Only a real send (or a deliberate dev-mode skip) marks the booking done —
+    // "skipped" in production means every transport failed, so leave emailSent
+    // false to allow a retry, instead of silently losing the ticket forever.
+    if (result?.sent || (result?.skipped && process.env.NODE_ENV !== 'production')) {
+      booking.emailSent = true;
+    }
     emailPreview = result?.preview || null; // Ethereal preview URL (dev only)
   }
 
@@ -202,6 +207,36 @@ const devConfirmPayment = asyncHandler(async (req, res) => {
 });
 
 /**
+ * POST /api/payment/resend-email
+ * body: { bookingId }
+ * Re-sends the confirmation email for an already-paid booking. Needed because
+ * a "skipped" send (every transport unavailable, e.g. BREVO_API_KEY missing)
+ * previously got marked emailSent=true with no way to recover the ticket —
+ * this lets a paid booking's email be retried without re-running payment.
+ */
+const resendConfirmationEmail = asyncHandler(async (req, res) => {
+  const { bookingId } = req.body;
+  const booking = await Booking.findById(bookingId).populate('movie');
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found.');
+  }
+  if (booking.paymentStatus !== 'completed') {
+    res.status(400);
+    throw new Error('This booking has not been paid yet.');
+  }
+
+  const result = await sendBookingConfirmation({
+    ...booking.toObject(),
+    movieTitle: booking.movie?.title,
+  });
+  if (result?.sent) booking.emailSent = true;
+  await booking.save();
+
+  res.json({ success: true, result });
+});
+
+/**
  * POST /api/payment/webhook  (raw body)
  * Stripe-driven confirmation — reliable even if the user closes the tab.
  */
@@ -232,4 +267,10 @@ const handleWebhook = asyncHandler(async (req, res) => {
   res.json({ received: true });
 });
 
-module.exports = { createSession, confirmPayment, devConfirmPayment, handleWebhook };
+module.exports = {
+  createSession,
+  confirmPayment,
+  devConfirmPayment,
+  handleWebhook,
+  resendConfirmationEmail,
+};
