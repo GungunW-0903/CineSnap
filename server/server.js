@@ -4,7 +4,7 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const connectDB = require('./config/db');
-const { ensureReady: initEmail } = require('./config/email');
+const { ensureReady: initEmail, getMode: getEmailMode } = require('./config/email');
 const autoSeed = require('./config/autoSeed');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { handleWebhook, handleRazorpayWebhook } = require('./controllers/paymentController');
@@ -49,7 +49,20 @@ app.use(
 
 // ---- Health check ----
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'CineSnap API', time: new Date().toISOString() });
+  // `email` surfaces the active delivery path so production email failures are
+  // diagnosable without shell access: brevoApi=true means the HTTPS provider
+  // (the only one that works on Render) is configured. mode 'smtp'/'ethereal'/
+  // 'disabled' reflects the fallback transporter.
+  res.json({
+    status: 'ok',
+    service: 'CineSnap API',
+    time: new Date().toISOString(),
+    email: {
+      brevoApi: !!process.env.BREVO_API_KEY,
+      smtpConfigured: !!(process.env.EMAIL_USER && (process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS)),
+      mode: getEmailMode(),
+    },
+  });
 });
 
 // ---- Routes ----
