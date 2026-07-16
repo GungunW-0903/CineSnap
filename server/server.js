@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/db');
 const { ensureReady: initEmail } = require('./config/email');
+const autoSeed = require('./config/autoSeed');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { handleWebhook, handleRazorpayWebhook } = require('./controllers/paymentController');
 
@@ -70,6 +71,7 @@ const PORT = process.env.PORT || 5000;
 connectDB()
   .then(() => {
     initEmail(); // warm up the email transporter (Ethereal/SMTP) in the background
+    autoSeed(); // sync movies/shows from seedData.js in the background (idempotent)
 
     const server = app.listen(PORT, () => {
       console.log(`\n🎬 CineSnap API running on http://localhost:${PORT}`);
