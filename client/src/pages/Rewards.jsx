@@ -6,7 +6,7 @@ import BlurCircle from '../components/BlurCircle'
 import Loading from '../components/Loading'
 import { useProfile, tierInfo, TIERS } from '../context/ProfileContext'
 
-const currency = import.meta.env.VITE_CURRENCY || '$'
+const currency = import.meta.env.VITE_CURRENCY || '₹'
 
 const StatCard = ({ icon: Icon, label, value }) => (
   <div className='flex items-center gap-3 bg-white/[0.04] border border-white/10 rounded-2xl p-4'>

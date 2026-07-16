@@ -4,6 +4,9 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion'
 import Home from './pages/Home'
 import Movies from './pages/Movies'
+import NewReleases from './pages/NewReleases'
+import ComingSoon from './pages/ComingSoon'
+import CineLounges from './pages/CineLounges'
 import MovieDetails from './pages/MovieDetails'
 import SeatLayout from './pages/SeatLayout'
 import Checkout from './pages/Checkout'
@@ -58,6 +61,9 @@ const AppContent = () => {
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<PageTransition><Home /></PageTransition>} />
           <Route path="/movies" element={<PageTransition><Movies /></PageTransition>} />
+          <Route path="/new-releases" element={<PageTransition><NewReleases /></PageTransition>} />
+          <Route path="/coming-soon" element={<PageTransition><ComingSoon /></PageTransition>} />
+          <Route path="/cine-lounges" element={<PageTransition><CineLounges /></PageTransition>} />
           <Route path="/movies/:id" element={<PageTransition><MovieDetails /></PageTransition>} />
           <Route path="/movies/:id/:date" element={<PageTransition><SeatLayout /></PageTransition>} />
           <Route path="/checkout/:bookingId" element={<PageTransition><Checkout /></PageTransition>} />

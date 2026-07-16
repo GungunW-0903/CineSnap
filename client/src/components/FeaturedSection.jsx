@@ -11,7 +11,8 @@ const FeaturedSection = () => {
 
   useEffect(() => {
     let cancelled = false
-    fetchMovies().then((list) => { if (!cancelled) setMovies(list) })
+    // Home "Now showing" rail — unreleased titles live on the Coming Soon page.
+    fetchMovies().then((list) => { if (!cancelled) setMovies(list.filter((m) => m.status !== 'coming_soon')) })
     return () => { cancelled = true }
   }, [])
 

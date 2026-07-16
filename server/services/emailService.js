@@ -187,7 +187,7 @@ async function sendBookingConfirmation(booking) {
       <tr><td style="padding:8px 20px 0;color:#8a94a8;font-size:13px;">Date</td><td style="padding:8px 20px 0;text-align:right;color:#15181f;font-size:13px;">${booking.showDate}</td></tr>
       <tr><td style="padding:8px 20px 0;color:#8a94a8;font-size:13px;">Time</td><td style="padding:8px 20px 0;text-align:right;color:#15181f;font-size:13px;">${booking.showTime}</td></tr>
       <tr><td style="padding:8px 20px 0;color:#8a94a8;font-size:13px;">Seats</td><td style="padding:8px 20px 0;text-align:right;font-weight:600;color:#15181f;font-size:13px;">${seats}</td></tr>
-      <tr><td style="padding:8px 20px 0;color:#8a94a8;font-size:13px;">Total paid</td><td style="padding:8px 20px 0;text-align:right;font-weight:700;color:${BRAND.accent};font-size:13px;">$${Number(booking.totalAmount).toFixed(2)}</td></tr>
+      <tr><td style="padding:8px 20px 0;color:#8a94a8;font-size:13px;">Total paid</td><td style="padding:8px 20px 0;text-align:right;font-weight:700;color:${BRAND.accent};font-size:13px;">₹${Number(booking.totalAmount).toFixed(2)}</td></tr>
       <tr><td style="padding:8px 20px 14px;color:#8a94a8;font-size:13px;">Booking code</td><td style="padding:8px 20px 14px;text-align:right;font-family:monospace;color:#15181f;font-size:13px;">${booking.bookingCode}</td></tr>
     </table>
     ${qrBlock}

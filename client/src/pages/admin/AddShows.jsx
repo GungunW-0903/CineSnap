@@ -4,7 +4,7 @@ import Loading from '../../components/Loading';
 import { StarIcon } from 'lucide-react';
 import Title from '../../components/Admin/Title';
 const AddShows = () => {
-  const currency =import.meta.env.VITE_CURRENCY
+  const currency = import.meta.env.VITE_CURRENCY || '₹'
   const [nowPlayingMovie, setNowPlayingMovies] =useState([]);
   const [selectedMovie,setSelectedMovie] = useState(null)
   const [dateTimeSelection,setDateTimeSelection] =useState({});

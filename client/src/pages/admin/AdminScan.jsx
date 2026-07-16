@@ -3,7 +3,7 @@ import { Html5Qrcode } from 'html5-qrcode'
 import { CheckCircle2Icon, XCircleIcon, TicketCheckIcon, ScanLine, RotateCcw } from 'lucide-react'
 import { verifyTicket, checkInTicket } from '../../lib/api'
 
-const currency = import.meta.env.VITE_CURRENCY || '$'
+const currency = import.meta.env.VITE_CURRENCY || '₹'
 
 // Extract the booking code from whatever the QR encodes (a /verify/<code> URL
 // or the bare code).

@@ -30,8 +30,9 @@ const LoyaltyBadge = () => {
 const navLinks = [
   { label: 'Home', path: '/' },
   { label: 'Movies', path: '/movies' },
-  { label: 'Cine Lounges', path: '/movies' },
-  { label: 'New Releases', path: '/movies' },
+  { label: 'Cine Lounges', path: '/cine-lounges' },
+  { label: 'New Releases', path: '/new-releases' },
+  { label: 'Coming Soon', path: '/coming-soon' },
   { label: 'Favorites', path: '/favourite' }
 ]
 

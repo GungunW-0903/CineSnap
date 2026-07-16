@@ -14,6 +14,22 @@ const SORTS = [
   { key: 'runtime', label: 'Longest' },
 ]
 
+// Friendly labels for the ISO language codes in the catalogue.
+const LANGUAGE_LABELS = {
+  hi: 'Hindi',
+  en: 'English',
+  ta: 'Tamil',
+  te: 'Telugu',
+  ml: 'Malayalam',
+  kn: 'Kannada',
+  bn: 'Bengali',
+  mr: 'Marathi',
+  pa: 'Punjabi',
+}
+
+const languageLabel = (code) =>
+  LANGUAGE_LABELS[code] || (code ? code.toUpperCase() : 'Other')
+
 const CardSkeleton = () => (
   <div className="overflow-hidden rounded-[22px] border border-white/10 bg-[#0f1628]/70">
     <div className="aspect-[2/3] animate-pulse bg-white/5" />
@@ -29,12 +45,14 @@ const Movies = () => {
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [genre, setGenre] = useState('All')
+  const [language, setLanguage] = useState('All')
   const [sort, setSort] = useState('rating')
 
   useEffect(() => {
     let alive = true
     fetchMovies()
-      .then((data) => alive && setMovies(data))
+      // Coming-soon titles live on the Coming Soon page — this is "now showing".
+      .then((data) => alive && setMovies(data.filter((m) => m.status !== 'coming_soon')))
       .finally(() => alive && setLoading(false))
     return () => {
       alive = false
@@ -46,6 +64,16 @@ const Movies = () => {
     const set = new Set()
     movies.forEach((m) => (m.genres || []).forEach((g) => set.add(g.name)))
     return ['All', ...Array.from(set).sort()]
+  }, [movies])
+
+  // unique languages present in the catalogue (as {code,label})
+  const languages = useMemo(() => {
+    const set = new Set()
+    movies.forEach((m) => m.original_language && set.add(m.original_language))
+    const list = Array.from(set)
+      .map((code) => ({ code, label: languageLabel(code) }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+    return [{ code: 'All', label: 'All languages' }, ...list]
   }, [movies])
 
   // top picks for the spotlight (highest rated, unique)
@@ -63,6 +91,9 @@ const Movies = () => {
     if (genre !== 'All') {
       list = list.filter((m) => (m.genres || []).some((g) => g.name === genre))
     }
+    if (language !== 'All') {
+      list = list.filter((m) => m.original_language === language)
+    }
     list = [...list].sort((a, b) => {
       if (sort === 'rating') return (b.vote_average || 0) - (a.vote_average || 0)
       if (sort === 'newest') return new Date(b.release_date) - new Date(a.release_date)
@@ -71,9 +102,9 @@ const Movies = () => {
       return 0
     })
     return list
-  }, [movies, query, genre, sort])
+  }, [movies, query, genre, language, sort])
 
-  const hasFilters = query.trim() || genre !== 'All'
+  const hasFilters = query.trim() || genre !== 'All' || language !== 'All'
 
   return (
     <section className="relative section-shell overflow-hidden pt-30 md:pt-34 pb-24 min-h-[80vh]">
@@ -159,6 +190,25 @@ const Movies = () => {
         ))}
       </div>
 
+      {/* language pills */}
+      {languages.length > 1 && (
+        <div className="mt-3 flex flex-wrap gap-2 reveal-up reveal-delay-2">
+          {languages.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => setLanguage(l.code)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
+                language === l.code
+                  ? 'border border-[#ff5a3d]/50 bg-[#ff5a3d]/15 text-[#ff9a7a]'
+                  : 'border border-white/12 text-gray-400 hover:border-white/25 hover:text-white'
+              }`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* results count */}
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm text-gray-400">
@@ -168,6 +218,7 @@ const Movies = () => {
               onClick={() => {
                 setQuery('')
                 setGenre('All')
+                setLanguage('All')
               }}
               className="ml-3 text-xs text-[#ffc24a] hover:underline"
             >
@@ -214,6 +265,7 @@ const Movies = () => {
             onClick={() => {
               setQuery('')
               setGenre('All')
+              setLanguage('All')
             }}
             className="btn-cinesnap mt-6 px-6"
           >

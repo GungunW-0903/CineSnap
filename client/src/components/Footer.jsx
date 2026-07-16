@@ -31,7 +31,8 @@ const Footer = () => {
                             <ul className='mt-4 space-y-2 text-sm text-gray-300'>
                                 <li><a href='/' className='hover:text-white transition'>Home</a></li>
                                 <li><a href='/movies' className='hover:text-white transition'>Now Showing</a></li>
-                                <li><a href='/movies' className='hover:text-white transition'>Upcoming Releases</a></li>
+                                <li><a href='/new-releases' className='hover:text-white transition'>New Releases</a></li>
+                                <li><a href='/cine-lounges' className='hover:text-white transition'>Cine Lounges</a></li>
                                 <li><a href='/my-bookings' className='hover:text-white transition'>My Bookings</a></li>
                             </ul>
                         </div>
@@ -39,18 +40,24 @@ const Footer = () => {
                         <div>
                             <h2 className='text-2xl'>Contact</h2>
                             <div className='mt-4 space-y-3 text-sm text-gray-300'>
-                                <p className='flex items-center gap-2'>
+                                <a href='tel:+912248905623' className='flex items-center gap-2 hover:text-white transition'>
                                     <Phone className='w-4 h-4 text-[#ffba69]' />
-                                    +1-234-567-890
-                                </p>
-                                <p className='flex items-center gap-2'>
+                                    +91 22 4890 5623
+                                </a>
+                                <a href='mailto:support@cinesnap.in' className='flex items-center gap-2 hover:text-white transition'>
                                     <Mail className='w-4 h-4 text-[#ffba69]' />
-                                    contact@cinesnap.com
-                                </p>
-                                <p className='flex items-center gap-2'>
-                                    <MapPin className='w-4 h-4 text-[#ffba69]' />
-                                    Downtown Cinema District
-                                </p>
+                                    support@cinesnap.in
+                                </a>
+                                <a
+                                    href='https://www.google.com/maps/search/?api=1&query=Lower+Parel+Mumbai'
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    className='flex items-start gap-2 hover:text-white transition'
+                                >
+                                    <MapPin className='w-4 h-4 text-[#ffba69] mt-0.5 shrink-0' />
+                                    <span>4th Floor, Trade View Tower,<br />Lower Parel, Mumbai 400013</span>
+                                </a>
+                                <p className='text-xs text-gray-500 pl-6'>Support: 9 AM – 11 PM IST, all days</p>
                             </div>
                         </div>
                     </div>

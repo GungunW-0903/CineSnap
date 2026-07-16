@@ -4,7 +4,7 @@ import { CheckCircle2Icon, XCircleIcon, TicketCheckIcon, Loader2Icon } from 'luc
 import BlurCircle from '../components/BlurCircle'
 import { verifyTicket, checkInTicket } from '../lib/api'
 
-const currency = import.meta.env.VITE_CURRENCY || '$'
+const currency = import.meta.env.VITE_CURRENCY || '₹'
 
 // Staff-facing ticket verification — the QR on each ticket points here.
 const Verify = () => {

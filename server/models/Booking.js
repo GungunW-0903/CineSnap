@@ -45,7 +45,7 @@ const BookingSchema = new mongoose.Schema({
   },
   currency: {
     type: String,
-    default: 'usd'
+    default: 'inr'
   },
   paymentStatus: {
     type: String,
@@ -58,6 +58,14 @@ const BookingSchema = new mongoose.Schema({
     sparse: true
   },
   stripeSessionId: {
+    type: String,
+    sparse: true
+  },
+  razorpayOrderId: {
+    type: String,
+    sparse: true
+  },
+  razorpayPaymentId: {
     type: String,
     sparse: true
   },

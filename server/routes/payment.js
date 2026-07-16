@@ -5,8 +5,20 @@ const {
   confirmPayment,
   devConfirmPayment,
   resendConfirmationEmail,
+  getPaymentConfig,
+  createRazorpayOrderHandler,
+  verifyRazorpayPayment,
 } = require('../controllers/paymentController');
 
+// Which real payment methods are live (used by the checkout page to decide
+// whether to show Razorpay). Public, no secrets beyond the publishable key id.
+router.get('/config', getPaymentConfig);
+
+// ---- Razorpay ----
+router.post('/razorpay/order', createRazorpayOrderHandler);
+router.post('/razorpay/verify', verifyRazorpayPayment);
+
+// ---- Stripe (legacy card path, kept for compatibility) ----
 router.post('/create-checkout-session', createSession);
 router.post('/confirm', confirmPayment);
 

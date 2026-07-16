@@ -8,7 +8,7 @@ import { fetchMyBookings, confirmBookingPayment, cancelBooking } from '../lib/ap
 import { useProfile } from '../context/ProfileContext'
 
 const MyBookings = () => {
-  const currency = import.meta.env.VITE_CURRENCY || '$'
+  const currency = import.meta.env.VITE_CURRENCY || '₹'
   const { user } = useAuthUser()
   const { refresh } = useProfile()
   const [bookings, setBookings] = useState([])
@@ -56,7 +56,7 @@ const MyBookings = () => {
   if (isLoading) return <Loading />
 
   return (
-    <div className='relative px:6 md:px-16 lg:px-40 pt-30 md:pt-40 min-h-[80vh]'>
+    <div className='relative px-6 md:px-16 lg:px-40 pt-30 md:pt-40 min-h-[80vh]'>
       <BlurCircle top="100px" left="100px" />
       <div>
         <BlurCircle bottom="0px" right="300px" />

@@ -2,14 +2,21 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuthUser } from '../lib/authUser'
 import toast from 'react-hot-toast'
-import { CreditCardIcon, ShieldCheckIcon, TicketIcon, ZapIcon, LockIcon } from 'lucide-react'
+import { ShieldCheckIcon, TicketIcon, ZapIcon, LockIcon, WalletIcon, TagIcon } from 'lucide-react'
 import BlurCircle from '../components/BlurCircle'
 import Loading from '../components/Loading'
-import { fetchBookingById, createStripeCheckout, confirmBookingPayment, applyPromo } from '../lib/api'
+import {
+  fetchBookingById,
+  fetchPaymentConfig,
+  loadRazorpayScript,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  confirmBookingPayment,
+  applyPromo,
+} from '../lib/api'
 import { useProfile } from '../context/ProfileContext'
-import { TagIcon } from 'lucide-react'
 
-const currency = import.meta.env.VITE_CURRENCY || '$'
+const currency = import.meta.env.VITE_CURRENCY || '₹'
 
 const Checkout = () => {
   const { bookingId } = useParams()
@@ -19,7 +26,8 @@ const Checkout = () => {
 
   const [booking, setBooking] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [method, setMethod] = useState('card')
+  const [method, setMethod] = useState('razorpay')
+  const [razorpayEnabled, setRazorpayEnabled] = useState(null) // null = still checking
   const [paying, setPaying] = useState(false)
   const [promoInput, setPromoInput] = useState('')
   const [promo, setPromo] = useState(null) // { label, discount }
@@ -28,36 +36,102 @@ const Checkout = () => {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const b = await fetchBookingById(bookingId, user)
+      const [b, cfg] = await Promise.all([
+        fetchBookingById(bookingId, user),
+        fetchPaymentConfig(),
+      ])
       if (!cancelled) {
         setBooking(b)
+        const enabled = !!cfg?.razorpay?.enabled
+        setRazorpayEnabled(enabled)
+        if (!enabled) setMethod('demo') // keys not configured → demo is the default
         setLoading(false)
       }
     }
     load()
+    // Warm the Razorpay script in the background so the modal opens instantly.
+    loadRazorpayScript()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId, user?.id])
 
   const movie = booking?.movie || booking?.show?.movie || {}
 
+  // Completes the flow after any successful payment path.
+  const onPaid = (t, emailPreview) => {
+    toast.success('Payment successful! 🎬', { id: t })
+    refresh() // update loyalty points/tier now that this booking earned points
+    navigate('/booking-success', { state: { emailPreview } })
+  }
+
+  const payWithRazorpay = async () => {
+    const t = toast.loading('Opening secure Razorpay checkout…')
+
+    const scriptOk = await loadRazorpayScript()
+    if (!scriptOk) {
+      toast.error('Could not load Razorpay — check your connection.', { id: t })
+      setPaying(false)
+      return
+    }
+
+    const res = await createRazorpayOrder(bookingId, user)
+    if (!res.ok) {
+      // Keys missing / backend down → guide the user to the demo path.
+      toast.error(res.error || 'Razorpay is not available — try Demo Payment.', { id: t })
+      setMethod('demo')
+      setPaying(false)
+      return
+    }
+
+    const { orderId, amount, currency: orderCurrency, keyId, booking: orderBooking } = res.order
+    toast.dismiss(t)
+
+    const rzp = new window.Razorpay({
+      key: keyId,
+      amount,
+      currency: orderCurrency,
+      name: 'CineSnap',
+      description: `${orderBooking?.movieTitle || 'Movie tickets'} — ${(orderBooking?.seats || []).join(', ')}`,
+      order_id: orderId,
+      prefill: {
+        name: orderBooking?.userName || '',
+        email: orderBooking?.userEmail || '',
+      },
+      theme: { color: '#f84565' },
+      handler: async (response) => {
+        // Razorpay says the payment went through — verify the signature
+        // server-side before treating the booking as paid.
+        const vt = toast.loading('Verifying payment…')
+        const verified = await verifyRazorpayPayment(response, user)
+        setPaying(false)
+        if (verified.ok) {
+          onPaid(vt, verified.emailPreview)
+        } else {
+          toast.error(verified.error || 'Payment verification failed.', { id: vt })
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          setPaying(false)
+          toast('Payment cancelled — your seats are still held.', { icon: 'ℹ️' })
+        },
+      },
+    })
+
+    rzp.on('payment.failed', (response) => {
+      setPaying(false)
+      toast.error(response?.error?.description || 'Payment failed. Please try again.')
+    })
+
+    rzp.open()
+  }
+
   const handlePay = async () => {
     if (paying) return
     setPaying(true)
 
-    if (method === 'card') {
-      // Real Stripe Checkout — redirects off-site when configured.
-      const t = toast.loading('Redirecting to secure checkout…')
-      const res = await createStripeCheckout(bookingId, user)
-      if (res.ok && res.url) {
-        toast.dismiss(t)
-        window.location.href = res.url
-        return
-      }
-      // Stripe not configured → offer the demo path instead of dead-ending.
-      toast.error('Card payments aren\'t enabled yet — using demo payment.', { id: t })
-      setMethod('demo')
-      setPaying(false)
+    if (method === 'razorpay') {
+      await payWithRazorpay()
       return
     }
 
@@ -66,10 +140,7 @@ const Checkout = () => {
     const res = await confirmBookingPayment(bookingId, user)
     setPaying(false)
     if (res.ok) {
-      toast.success('Payment successful! 🎬', { id: t })
-      refresh() // update loyalty points/tier now that this booking earned points
-      // Pass the confirmation-email preview link through to the success page.
-      navigate('/booking-success', { state: { emailPreview: res.emailPreview } })
+      onPaid(t, res.emailPreview)
     } else {
       toast.error(res.error || 'Payment failed', { id: t })
     }
@@ -184,14 +255,17 @@ const Checkout = () => {
           <p className='text-sm font-semibold text-gray-300 mb-3'>Payment method</p>
 
           <button
-            onClick={() => setMethod('card')}
-            className={`w-full flex items-center gap-3 p-4 rounded-xl border mb-3 transition text-left ${method === 'card' ? 'border-[#f84565] bg-[#f84565]/10' : 'border-white/10 hover:border-white/25'}`}
+            onClick={() => setMethod('razorpay')}
+            className={`w-full flex items-center gap-3 p-4 rounded-xl border mb-3 transition text-left ${method === 'razorpay' ? 'border-[#f84565] bg-[#f84565]/10' : 'border-white/10 hover:border-white/25'}`}
           >
-            <CreditCardIcon className='w-5 h-5 text-[#f84565]' />
-            <div>
-              <p className='font-medium'>Credit / Debit Card</p>
-              <p className='text-xs text-gray-400'>Secure checkout via Stripe</p>
+            <WalletIcon className='w-5 h-5 text-[#f84565]' />
+            <div className='flex-1'>
+              <p className='font-medium'>UPI / Card / Netbanking</p>
+              <p className='text-xs text-gray-400'>Secure checkout via Razorpay</p>
             </div>
+            {razorpayEnabled === false && (
+              <span className='text-[10px] uppercase tracking-wide text-gray-500 border border-white/10 rounded px-1.5 py-0.5'>Needs keys</span>
+            )}
           </button>
 
           <button
@@ -221,10 +295,10 @@ const Checkout = () => {
             Cancel and go back
           </button>
 
-          {method === 'card' && (
+          {method === 'razorpay' && (
             <div className='flex items-start gap-2 text-xs text-gray-500 mt-5'>
               <TicketIcon className='w-4 h-4 mt-0.5 shrink-0' />
-              <span>Test card: <span className='font-mono text-gray-300'>4242 4242 4242 4242</span>, any future date & CVC.</span>
+              <span>Test card: <span className='font-mono text-gray-300'>4111 1111 1111 1111</span>, any future date & CVV. Test UPI: <span className='font-mono text-gray-300'>success@razorpay</span></span>
             </div>
           )}
         </div>

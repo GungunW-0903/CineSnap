@@ -6,7 +6,7 @@ import { dummyShowsData } from '../../assets/assets';
 
 const ListShows = () => {
 
-  const currency =import.meta.env.VITE_CURRENCY
+  const currency = import.meta.env.VITE_CURRENCY || '₹'
 
   const [shows, setShows] =useState([]);
   const [loading,setLoading] =useState(true);

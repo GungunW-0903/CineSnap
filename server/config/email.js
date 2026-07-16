@@ -31,7 +31,9 @@ function looksReal(user, pass) {
 
 async function init() {
   const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASSWORD;
+  // Accept either EMAIL_PASSWORD or EMAIL_PASS — both names appear in the wild
+  // and mixing them up silently disables real SMTP, so support both.
+  const pass = process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
   const host = process.env.EMAIL_HOST; // set this for non-Gmail SMTP relays (Brevo, SendGrid, Mailgun, ...)
 
   // 1. Real SMTP

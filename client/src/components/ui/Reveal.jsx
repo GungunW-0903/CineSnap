@@ -55,13 +55,17 @@ const Reveal = ({
  * Stagger — wraps a group; children using <Reveal> inside get sequenced
  * by their own delay, but for arrays this convenience container staggers
  * direct motion children.
+ *
+ * `amount` is intentionally tiny: for tall grids (many rows) a large
+ * threshold can exceed the fraction of the element that ever fits in the
+ * viewport, so the reveal would never fire and content stays invisible.
  */
-export const StaggerGroup = ({ children, className = '', stagger = 0.08, ...rest }) => (
+export const StaggerGroup = ({ children, className = '', stagger = 0.08, amount = 0.05, ...rest }) => (
   <motion.div
     className={className}
     initial="hidden"
     whileInView="show"
-    viewport={{ once: true, amount: 0.2 }}
+    viewport={{ once: true, amount }}
     variants={{
       hidden: {},
       show: { transition: { staggerChildren: stagger } },

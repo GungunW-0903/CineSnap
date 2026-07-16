@@ -113,7 +113,7 @@ const Hero3DTicket = ({
           <div className="cs-barcode" aria-hidden />
           <div className="text-right">
             <p className="text-[0.6rem] uppercase tracking-[0.2em] text-white/40">Total</p>
-            <p className="text-lg font-bold text-white">$37.50</p>
+            <p className="text-lg font-bold text-white">₹640.00</p>
           </div>
         </div>
       </div>

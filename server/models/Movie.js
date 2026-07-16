@@ -49,7 +49,7 @@ const MovieSchema = new mongoose.Schema({
   trailer_url: String,
   rating: {
     type: String,
-    enum: ['G', 'PG', 'PG-13', 'R', 'NC-17', 'NR'],
+    enum: ['G', 'PG', 'PG-13', 'R', 'NC-17', 'NR', 'U', 'UA', 'A', 'S'],
     default: 'NR'
   },
   status: {

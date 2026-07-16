@@ -6,7 +6,7 @@ require('dotenv').config();
 const connectDB = require('./config/db');
 const { ensureReady: initEmail } = require('./config/email');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
-const { handleWebhook } = require('./controllers/paymentController');
+const { handleWebhook, handleRazorpayWebhook } = require('./controllers/paymentController');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -27,6 +27,9 @@ app.use(
 
 // ---- Stripe webhook (MUST be before express.json, needs the raw body) ----
 app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), handleWebhook);
+
+// ---- Razorpay webhook (also needs the raw body for signature verification) ----
+app.post('/api/payment/razorpay/webhook', express.raw({ type: 'application/json' }), handleRazorpayWebhook);
 
 // ---- Body parsing for everything else ----
 app.use(express.json({ limit: '1mb' }));

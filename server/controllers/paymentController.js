@@ -1,5 +1,14 @@
 const QRCode = require('qrcode');
 const { stripe, createCheckoutSession, retrieveSession } = require('../config/stripe');
+const {
+  razorpay,
+  isRazorpayEnabled,
+  keyId: razorpayKeyId,
+  CURRENCY: razorpayCurrency,
+  createOrder: createRazorpayOrder,
+  verifyPaymentSignature,
+  verifyWebhookSignature,
+} = require('../config/razorpay');
 const Booking = require('../models/Booking');
 const Show = require('../models/Show');
 const User = require('../models/User');
@@ -48,8 +57,8 @@ async function completeBooking(booking, paymentIntentId) {
     await show.save();
   }
 
-  // loyalty: 10 points per dollar
-  const earned = Math.round(booking.totalAmount * 10);
+  // loyalty: 1 point per ₹10 spent
+  const earned = Math.round(booking.totalAmount / 10);
   const movie = await Booking.findById(booking._id).populate('movie').then((b) => b?.movie);
 
   // Ensure a user record exists so points always accrue (guests included).
@@ -237,6 +246,139 @@ const resendConfirmationEmail = asyncHandler(async (req, res) => {
 });
 
 /**
+ * GET /api/payment/config
+ * Public — tells the frontend which real payment methods are available and the
+ * Razorpay publishable key (safe to expose) so the client can open Checkout.
+ */
+const getPaymentConfig = asyncHandler(async (req, res) => {
+  res.json({
+    razorpay: {
+      enabled: isRazorpayEnabled,
+      keyId: isRazorpayEnabled ? razorpayKeyId : null,
+      currency: razorpayCurrency,
+    },
+    stripe: { enabled: !!stripe },
+  });
+});
+
+/**
+ * POST /api/payment/razorpay/order
+ * body: { bookingId }
+ * Creates a Razorpay order for a pending booking and returns everything the
+ * frontend needs to open Razorpay Checkout.
+ */
+const createRazorpayOrderHandler = asyncHandler(async (req, res) => {
+  if (!razorpay) {
+    res.status(503);
+    throw new Error('Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to .env.');
+  }
+
+  const { bookingId } = req.body;
+  const booking = await Booking.findById(bookingId).populate('movie');
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found.');
+  }
+  if (booking.paymentStatus === 'completed') {
+    res.status(400);
+    throw new Error('This booking is already paid.');
+  }
+
+  const order = await createRazorpayOrder({
+    bookingId: booking._id,
+    amount: booking.totalAmount,
+    notes: { seats: booking.seats.join(','), movie: booking.movie?.title || '' },
+  });
+
+  booking.razorpayOrderId = order.id;
+  await booking.save();
+
+  res.json({
+    orderId: order.id,
+    amount: order.amount, // paise
+    currency: order.currency,
+    keyId: razorpayKeyId,
+    booking: {
+      id: booking._id,
+      movieTitle: booking.movie?.title,
+      seats: booking.seats,
+      userName: booking.userName,
+      userEmail: booking.userEmail,
+    },
+  });
+});
+
+/**
+ * POST /api/payment/razorpay/verify
+ * body: { razorpay_order_id, razorpay_payment_id, razorpay_signature }
+ * Called by the frontend after Razorpay Checkout succeeds. Verifies the
+ * signature server-side, then finalizes the booking (seats, loyalty, email).
+ */
+const verifyRazorpayPayment = asyncHandler(async (req, res) => {
+  const {
+    razorpay_order_id: orderId,
+    razorpay_payment_id: paymentId,
+    razorpay_signature: signature,
+  } = req.body;
+
+  if (!orderId || !paymentId || !signature) {
+    res.status(400);
+    throw new Error('Missing Razorpay payment fields.');
+  }
+
+  const ok = verifyPaymentSignature({ orderId, paymentId, signature });
+  if (!ok) {
+    res.status(400);
+    throw new Error('Payment verification failed — invalid signature.');
+  }
+
+  const booking = await Booking.findOne({ razorpayOrderId: orderId });
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found for this order.');
+  }
+
+  booking.razorpayPaymentId = paymentId;
+  const { emailPreview } = await completeBooking(booking, paymentId);
+  const populated = await Booking.findById(booking._id)
+    .populate({ path: 'show', populate: { path: 'movie' } })
+    .populate('movie')
+    .lean();
+
+  res.json({ success: true, booking: populated, emailPreview });
+});
+
+/**
+ * POST /api/payment/razorpay/webhook  (raw body)
+ * Razorpay-driven confirmation — reliable even if the user closes the tab.
+ * Requires RAZORPAY_WEBHOOK_SECRET to be configured.
+ */
+const handleRazorpayWebhook = asyncHandler(async (req, res) => {
+  const signature = req.headers['x-razorpay-signature'];
+  const rawBody = req.body; // Buffer (express.raw)
+
+  if (!verifyWebhookSignature(rawBody, signature)) {
+    return res.status(400).send('Invalid webhook signature');
+  }
+
+  const event = JSON.parse(rawBody.toString());
+  if (event.event === 'payment.captured' || event.event === 'order.paid') {
+    const entity = event.payload?.payment?.entity || event.payload?.order?.entity;
+    const orderId = entity?.order_id || entity?.id;
+    const paymentId = event.payload?.payment?.entity?.id;
+    if (orderId) {
+      const booking = await Booking.findOne({ razorpayOrderId: orderId });
+      if (booking) {
+        if (paymentId) booking.razorpayPaymentId = paymentId;
+        await completeBooking(booking, paymentId);
+      }
+    }
+  }
+
+  res.json({ received: true });
+});
+
+/**
  * POST /api/payment/webhook  (raw body)
  * Stripe-driven confirmation — reliable even if the user closes the tab.
  */
@@ -273,4 +415,8 @@ module.exports = {
   devConfirmPayment,
   handleWebhook,
   resendConfirmationEmail,
+  getPaymentConfig,
+  createRazorpayOrderHandler,
+  verifyRazorpayPayment,
+  handleRazorpayWebhook,
 };

@@ -68,7 +68,7 @@ export async function fetchTrending(limit = 8) {
     if (Array.isArray(list) && list.length > 0) return dedupeById(list)
     throw new Error('Empty trending list')
   } catch {
-    return dedupeById(dummyShowsData).slice(0, limit)
+    return dedupeById(dummyShowsData).filter((m) => m.status !== 'coming_soon').slice(0, limit)
   }
 }
 
@@ -172,6 +172,68 @@ export async function createStripeCheckout(bookingId, user) {
       user,
     })
     return { ok: true, url: data.url }
+  } catch (err) {
+    return { ok: false, error: err.message }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Razorpay
+// ---------------------------------------------------------------------------
+
+// Which real payment methods the backend has keys for. Safe defaults offline.
+export async function fetchPaymentConfig() {
+  try {
+    return await tryFetch('/payment/config')
+  } catch {
+    return { razorpay: { enabled: false }, stripe: { enabled: false } }
+  }
+}
+
+// Loads Razorpay's checkout.js exactly once. Resolves true when window.Razorpay
+// is available, false if the script can't load (offline / blocked).
+let razorpayScriptPromise = null
+export function loadRazorpayScript() {
+  if (window.Razorpay) return Promise.resolve(true)
+  if (razorpayScriptPromise) return razorpayScriptPromise
+  razorpayScriptPromise = new Promise((resolve) => {
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.onload = () => resolve(true)
+    script.onerror = () => {
+      razorpayScriptPromise = null // allow a retry on the next attempt
+      resolve(false)
+    }
+    document.body.appendChild(script)
+  })
+  return razorpayScriptPromise
+}
+
+// Create a Razorpay order for a booking. Returns { ok, order?, error? } where
+// order = { orderId, amount (paise), currency, keyId, booking }.
+export async function createRazorpayOrder(bookingId, user) {
+  try {
+    const data = await request('/payment/razorpay/order', {
+      method: 'POST',
+      body: { bookingId },
+      user,
+    })
+    return { ok: true, order: data }
+  } catch (err) {
+    return { ok: false, error: err.message }
+  }
+}
+
+// Verify a completed Razorpay payment (signature check happens server-side).
+// Returns { ok, booking?, emailPreview?, error? }.
+export async function verifyRazorpayPayment(payload, user) {
+  try {
+    const data = await request('/payment/razorpay/verify', {
+      method: 'POST',
+      body: payload,
+      user,
+    })
+    return { ok: true, booking: data.booking, emailPreview: data.emailPreview }
   } catch (err) {
     return { ok: false, error: err.message }
   }

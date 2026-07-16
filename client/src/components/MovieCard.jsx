@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { StarIcon, Ticket, Heart, Play, Clock3, Flame } from 'lucide-react'
 import timeFormat from '../lib/timeFormat'
 import TiltCard from './ui/TiltCard'
 import useFavorites from '../hooks/useFavorites'
+import TrailerModal from './TrailerModal'
 
 const depth = (z) => ({ transform: `translateZ(${z}px)`, transformStyle: 'preserve-3d' })
 
@@ -12,9 +13,18 @@ const MovieCard = ({ movie, index = 0, rank }) => {
   const navigate = useNavigate()
   const { isFavorite, toggleFavorite } = useFavorites()
   const faved = isFavorite(movie._id)
+  const [showTrailer, setShowTrailer] = useState(false)
 
   const goToMovie = () => {
     navigate(`/movies/${movie._id}`)
+    window.scrollTo(0, 0)
+  }
+
+  // "Book" takes the user straight into the booking flow (date/showtime picker),
+  // not just the top of the details page.
+  const goToBooking = (e) => {
+    e.stopPropagation()
+    navigate(`/movies/${movie._id}`, { state: { scrollToBooking: true } })
     window.scrollTo(0, 0)
   }
 
@@ -101,14 +111,18 @@ const MovieCard = ({ movie, index = 0, rank }) => {
               </p>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={goToMovie}
+                  onClick={goToBooking}
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#ff5a3d] to-[#ffc24a] py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#ff5a3d]/30 transition-transform hover:-translate-y-0.5"
                 >
                   <Ticket className="h-4 w-4" />
                   Book
                 </button>
                 <button
-                  onClick={goToMovie}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (movie.trailer_url) setShowTrailer(true)
+                    else goToMovie()
+                  }}
                   aria-label="Watch trailer"
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/25 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
                 >
@@ -133,6 +147,14 @@ const MovieCard = ({ movie, index = 0, rank }) => {
           </div>
         </article>
       </TiltCard>
+
+      {showTrailer && (
+        <TrailerModal
+          url={movie.trailer_url}
+          title={movie.title}
+          onClose={() => setShowTrailer(false)}
+        />
+      )}
     </div>
   )
 }

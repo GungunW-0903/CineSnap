@@ -29,7 +29,7 @@ const getMovies = asyncHandler(async (req, res) => {
 /** GET /api/movies/trending — top by popularity/views/rating. */
 const getTrending = asyncHandler(async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit, 10) || 10, 30);
-  const movies = await Movie.find({ status: { $ne: 'ended' } })
+  const movies = await Movie.find({ status: { $nin: ['ended', 'coming_soon'] } })
     .sort({ popularity: -1, viewCount: -1, vote_average: -1 })
     .limit(limit)
     .lean();

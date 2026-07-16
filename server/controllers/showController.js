@@ -15,9 +15,12 @@ const getShows = asyncHandler(async (req, res) => {
 
 /** GET /api/shows/movie/:movieId — grouped by date for the booking UI. */
 const getShowsForMovie = asyncHandler(async (req, res) => {
+  // Only today-onwards: past show dates must never appear in the booking UI.
+  const today = new Date().toISOString().split('T')[0];
   const shows = await Show.find({
     movie: req.params.movieId,
     status: { $in: ['active', 'full'] },
+    date: { $gte: today },
   })
     .sort({ date: 1, time: 1 })
     .lean();

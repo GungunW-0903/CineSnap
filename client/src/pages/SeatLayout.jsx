@@ -16,6 +16,8 @@ function formatTime(t) {
   return t
 }
 
+const currency = import.meta.env.VITE_CURRENCY || '₹'
+
 const SeatLayout = () => {
   const groupRows = [["A","B"],["C","D"],["E","F"],["G","H"],["I","J"]]
   const { id,date } =useParams()
@@ -70,7 +72,7 @@ const SeatLayout = () => {
 
   const renderSeats =(row,count=9)=> (
     <div key ={row} className=''>
-      <div>
+      <div className='flex flex-wrap items-center justify-center gap-1 md:gap-2'>
         {Array.from({length:count}, (_,i) =>{
           const seatId = `${row}${i+1}`
           const isTaken = occupied.includes(seatId)
@@ -80,7 +82,7 @@ const SeatLayout = () => {
               key={seatId}
               onClick={()=>handleSeatClick(seatId)}
               disabled={isTaken}
-              className={`h-8 w-8 rounded border border-[#f84565]/60 cursor-pointer ${isSelected ? "bg-[#f84565] text-white" : ""} ${isTaken ? "opacity-30 cursor-not-allowed line-through" : ""}`}
+              className={`h-7 w-7 md:h-8 md:w-8 text-[10px] md:text-xs rounded border border-[#f84565]/60 cursor-pointer ${isSelected ? "bg-[#f84565] text-white" : ""} ${isTaken ? "opacity-30 cursor-not-allowed line-through" : ""}`}
             >
               {seatId}
             </button>
@@ -113,22 +115,22 @@ const SeatLayout = () => {
   const times = show?.dateTime?.[date] || []
 
   return show ? (
-    <div className='flex  px-6 md:px-16 lg:px-40 py-30 mt-10'>
-       <div className='w-60 bg-[#f84565]/10 border border-[#f84565]/20 rounded py-10 h-max md:top-30'>
+    <div className='flex flex-col md:flex-row gap-8 px-6 md:px-16 lg:px-40 py-30 mt-10'>
+       <div className='w-full md:w-60 shrink-0 bg-[#f84565]/10 border border-[#f84565]/20 rounded py-6 md:py-10 h-max md:top-30 md:sticky'>
         <p className='text-lg font-semibold px-6'>Available Timings</p>
-        <div className='mt-5'>
+        <div className='mt-5 flex md:flex-col overflow-x-auto md:overflow-visible gap-2 md:gap-0 px-4 md:px-0 pb-2 md:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
           {times.length === 0 && (
-            <p className='text-sm text-gray-400 px-6'>No showtimes for this date.</p>
+            <p className='text-sm text-gray-400 px-2 md:px-6 whitespace-nowrap'>No showtimes for this date.</p>
           )}
           {times.map((item)=>{
             const left = item.availableSeats
             const low = typeof left === 'number' && left <= 20
             const soldOut = typeof left === 'number' && left <= 0
             return (
-            <div key={item.showId || item.time} onClick={()=>!soldOut && setSelectedTime(item)} className={`flex flex-col px-6 py-2 w-max rounded-r-md transition ${soldOut ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${selectedTime?.showId === item.showId ? "bg-[#f84565] text-white" : soldOut ? "" : "hover:bg-[#f84565]/20"}`}>
+            <div key={item.showId || item.time} onClick={()=>!soldOut && setSelectedTime(item)} className={`flex flex-col shrink-0 px-4 md:px-6 py-2 w-max rounded-md md:rounded-l-none md:rounded-r-md border border-[#f84565]/20 md:border-0 transition ${soldOut ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${selectedTime?.showId === item.showId ? "bg-[#f84565] text-white" : soldOut ? "" : "hover:bg-[#f84565]/20"}`}>
               <div className='flex items-center gap-2'>
                 <ClockIcon className='w-5 h-5' />
-                <p className='text-sm'>{formatTime(item.time)}{item.ticketPrice ? ` · $${item.ticketPrice}` : ''}</p>
+                <p className='text-sm'>{formatTime(item.time)}{item.ticketPrice ? ` · ${currency}${item.ticketPrice}` : ''}</p>
               </div>
               {soldOut ? (
                 <span className='text-[11px] text-gray-400 pl-7'>Sold out</span>
@@ -139,25 +141,25 @@ const SeatLayout = () => {
           )})}
         </div>
        </div>
-       <div className='relative flex-1 flex flex-col items-center max-md:mt-16 '>
+       <div className='relative flex-1 flex flex-col items-center mt-4 md:mt-0'>
         <BlurCircle top='0px' left='0px'/>
         <BlurCircle bottom='0px' right='0px' />
         <h1 className='text-2xl font-semibold mb-4'>Select Your Seat</h1>
-        <img src={assets.screenImage} alt="screen" />
+        <img src={assets.screenImage} alt="screen" className='max-w-full' />
         <p className='text-gray-400 text-sm mb-6'>SCREEN SIDE</p>
-        <div className='flex flex-col items-center mt-10 text-xs text-gray-300'>
-          <div className='grid grid-cols-2 md:grid-cols-1 gap-8 md:gap-2 mb-6'>
+        <div className='flex flex-col items-center mt-10 text-xs text-gray-300 max-w-full'>
+          <div className='grid grid-cols-1 gap-2 mb-6'>
             {groupRows[0].map(row=>renderSeats(row))}
           </div>
         </div>
-        <div className='flex flex-wrap gap-11 px-20 text-sm font-medium'>
+        <div className='flex flex-wrap justify-center gap-6 md:gap-11 px-2 md:px-20 text-sm font-medium max-w-full'>
           {groupRows.slice(1).map((group,idx)=>(
             <div key={idx}>
               {group.map(row=>renderSeats(row))}
             </div>
           ))}
         </div>
-       <button onClick={handleCheckout} disabled={booking} className='flex items-center gap-1 mt-20 px-10 py-3 text-sm bg-[#f84565] hover:bg-[#D63854] transition rounded-full font-medium cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed'>
+       <button onClick={handleCheckout} disabled={booking} className='flex items-center gap-1 mt-12 md:mt-20 px-10 py-3 text-sm bg-[#f84565] hover:bg-[#D63854] transition rounded-full font-medium cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed'>
         {booking ? 'Processing…' : 'Proceed to Checkout'}
         <ArrowRightIcon strokeWidth={3} className='w-4.5 h-4.5' />
        </button>

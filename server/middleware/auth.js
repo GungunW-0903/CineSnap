@@ -16,8 +16,12 @@
  * blocks (identity is attached when available, otherwise `req.user` is empty).
  */
 
+// A placeholder key from .env.example ("sk_test_your_clerk_secret_key") must
+// not switch us into secure mode — it would demand JWTs nobody can produce.
 const clerkConfigured =
-  !!process.env.CLERK_SECRET_KEY && process.env.CLERK_SECRET_KEY.startsWith('sk_');
+  !!process.env.CLERK_SECRET_KEY &&
+  process.env.CLERK_SECRET_KEY.startsWith('sk_') &&
+  !process.env.CLERK_SECRET_KEY.includes('your_');
 
 // Lazily loaded so the app runs even if @clerk/express isn't installed.
 let verifyToken = null;

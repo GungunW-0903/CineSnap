@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { StarIcon, Ticket, Play, Clock3, CalendarDays, Heart } from 'lucide-react'
 import timeFormat from '../lib/timeFormat'
 import useFavorites from '../hooks/useFavorites'
+import TrailerModal from './TrailerModal'
 
 /**
  * MovieSpotlight
@@ -16,6 +17,7 @@ const MovieSpotlight = ({ movies = [], interval = 6000 }) => {
   const reduce = useReducedMotion()
   const { isFavorite, toggleFavorite } = useFavorites()
   const [active, setActive] = useState(0)
+  const [showTrailer, setShowTrailer] = useState(false)
 
   const list = movies.slice(0, 5)
 
@@ -114,7 +116,10 @@ const MovieSpotlight = ({ movies = [], interval = 6000 }) => {
                 Book tickets
               </button>
               <button
-                onClick={book}
+                onClick={() => {
+                  if (movie.trailer_url) setShowTrailer(true)
+                  else book()
+                }}
                 className="btn-cinesnap btn-cinesnap-ghost px-6"
               >
                 <Play className="h-4 w-4 fill-current" />
@@ -162,6 +167,14 @@ const MovieSpotlight = ({ movies = [], interval = 6000 }) => {
           ))}
         </div>
       </div>
+
+      {showTrailer && (
+        <TrailerModal
+          url={movie.trailer_url}
+          title={movie.title}
+          onClose={() => setShowTrailer(false)}
+        />
+      )}
     </div>
   )
 }
