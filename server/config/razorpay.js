@@ -5,8 +5,12 @@ const Razorpay = require('razorpay');
 // placeholders shipped in .env.example. This lets Razorpay stay cleanly
 // disabled (503) — with the demo payment still working — until real keys
 // are pasted in, instead of failing with a confusing auth error.
-const keyId = process.env.RAZORPAY_KEY_ID || '';
-const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
+// .trim() is load-bearing: pasting a key into a hosting dashboard (Render, etc.)
+// very often appends a trailing space or newline. An untrimmed secret computes a
+// wrong HMAC and every payment fails signature verification ("invalid signature")
+// even though the keys are otherwise correct.
+const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
 const isRealKey =
   keyId.startsWith('rzp_') &&
   !keyId.includes('your_') &&
@@ -54,7 +58,17 @@ function verifyPaymentSignature({ orderId, paymentId, signature }) {
   // timingSafeEqual guards against timing attacks; lengths must match first.
   const a = Buffer.from(expected);
   const b = Buffer.from(String(signature || ''));
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  const ok = a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!ok) {
+    // Diagnostic (no secret leaked): a length/prefix mismatch here almost always
+    // means the RAZORPAY_KEY_SECRET on the host doesn't match the KEY_ID that
+    // created the order (wrong secret, or trailing whitespace on either var).
+    console.warn(
+      `⚠ Razorpay signature mismatch — order=${orderId} payment=${paymentId} ` +
+        `secretLen=${keySecret.length} expLen=${expected.length} gotLen=${b.length}`
+    );
+  }
+  return ok;
 }
 
 /**
