@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuthUser } from '../lib/authUser'
 import toast from 'react-hot-toast'
-import { ShieldCheckIcon, TicketIcon, ZapIcon, LockIcon, WalletIcon, TagIcon } from 'lucide-react'
+import { ShieldCheckIcon, TicketIcon, ZapIcon, LockIcon, WalletIcon, TagIcon, MailIcon } from 'lucide-react'
 import BlurCircle from '../components/BlurCircle'
 import Loading from '../components/Loading'
 import {
@@ -15,8 +15,14 @@ import {
   applyPromo,
 } from '../lib/api'
 import { useProfile } from '../context/ProfileContext'
+import { getIdentity } from '../lib/identity'
 
 const currency = import.meta.env.VITE_CURRENCY || '₹'
+
+// Synthetic addresses minted for guests/no-email users — never deliverable,
+// so don't prefill them; make the customer type a real inbox instead.
+const SYNTHETIC_EMAIL_RE = /@(guest|user)\.cinesnap\.app$/i
+const VALID_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const Checkout = () => {
   const { bookingId } = useParams()
@@ -32,6 +38,12 @@ const Checkout = () => {
   const [promoInput, setPromoInput] = useState('')
   const [promo, setPromo] = useState(null) // { label, discount }
   const [applyingPromo, setApplyingPromo] = useState(false)
+  // Where the tickets get emailed. Prefilled from the signed-in user's real
+  // address; guests (synthetic @guest.cinesnap.app identity) must type one.
+  const [ticketEmail, setTicketEmail] = useState(() => {
+    const { userEmail } = getIdentity(user)
+    return SYNTHETIC_EMAIL_RE.test(userEmail || '') ? '' : userEmail || ''
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -55,6 +67,15 @@ const Checkout = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId, user?.id])
 
+  // Clerk resolves the user asynchronously — prefill the ticket email once the
+  // real address arrives, but never overwrite something the customer typed.
+  useEffect(() => {
+    if (ticketEmail) return
+    const { userEmail } = getIdentity(user)
+    if (userEmail && !SYNTHETIC_EMAIL_RE.test(userEmail)) setTicketEmail(userEmail)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
   const movie = booking?.movie || booking?.show?.movie || {}
 
   // Completes the flow after any successful payment path.
@@ -74,7 +95,7 @@ const Checkout = () => {
       return
     }
 
-    const res = await createRazorpayOrder(bookingId, user)
+    const res = await createRazorpayOrder(bookingId, user, ticketEmail.trim())
     if (!res.ok) {
       // Keys missing / backend down → guide the user to the demo path.
       toast.error(res.error || 'Razorpay is not available — try Demo Payment.', { id: t })
@@ -95,7 +116,7 @@ const Checkout = () => {
       order_id: orderId,
       prefill: {
         name: orderBooking?.userName || '',
-        email: orderBooking?.userEmail || '',
+        email: ticketEmail.trim() || orderBooking?.userEmail || '',
       },
       theme: { color: '#f84565' },
       handler: async (response) => {
@@ -128,6 +149,12 @@ const Checkout = () => {
 
   const handlePay = async () => {
     if (paying) return
+    // Tickets are delivered by email — refuse to charge before we have a real
+    // inbox to send them to (guests otherwise get an undeliverable address).
+    if (!VALID_EMAIL_RE.test(ticketEmail.trim())) {
+      toast.error('Enter a valid email — that\'s where your tickets will be sent.')
+      return
+    }
     setPaying(true)
 
     if (method === 'razorpay') {
@@ -137,7 +164,7 @@ const Checkout = () => {
 
     // Demo / test-mode payment (no external keys needed).
     const t = toast.loading('Processing payment…')
-    const res = await confirmBookingPayment(bookingId, user)
+    const res = await confirmBookingPayment(bookingId, user, ticketEmail.trim())
     setPaying(false)
     if (res.ok) {
       onPaid(t, res.emailPreview)
@@ -252,6 +279,19 @@ const Checkout = () => {
 
         {/* Payment methods */}
         <div className='flex-1 max-w-md'>
+          <p className='text-sm font-semibold text-gray-300 mb-2'>Email for tickets</p>
+          <div className='relative mb-5'>
+            <MailIcon className='w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none' />
+            <input
+              type='email'
+              value={ticketEmail}
+              onChange={(e) => setTicketEmail(e.target.value)}
+              placeholder='you@example.com'
+              className='w-full bg-white/5 border border-white/10 focus:border-[#f84565] outline-none rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-gray-500 transition'
+            />
+            <p className='text-[11px] text-gray-500 mt-1.5'>Your ticket & QR code will be sent here — show it at the counter.</p>
+          </div>
+
           <p className='text-sm font-semibold text-gray-300 mb-3'>Payment method</p>
 
           <button

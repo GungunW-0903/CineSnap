@@ -21,6 +21,18 @@ function frontendUrl() {
   return (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim();
 }
 
+// Guest checkouts get a synthetic @guest.cinesnap.app address, so tickets sent
+// there vanish. The checkout page therefore collects the customer's real email
+// and passes it as `ticketEmail` — apply it to the booking (pre-payment only)
+// so the confirmation actually lands in their inbox.
+const TICKET_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function applyTicketEmail(booking, ticketEmail) {
+  const email = String(ticketEmail || '').trim().toLowerCase();
+  if (!email || !TICKET_EMAIL_RE.test(email)) return;
+  if (booking.paymentStatus === 'completed') return; // never rewrite a paid booking
+  if (email !== booking.userEmail) booking.userEmail = email;
+}
+
 const TIER_THRESHOLDS = [
   { tier: 'Platinum', points: 2000 },
   { tier: 'Gold', points: 800 },
@@ -199,12 +211,13 @@ const confirmPayment = asyncHandler(async (req, res) => {
  * every environment.
  */
 const devConfirmPayment = asyncHandler(async (req, res) => {
-  const { bookingId } = req.body;
+  const { bookingId, ticketEmail } = req.body;
   const booking = await Booking.findById(bookingId);
   if (!booking) {
     res.status(404);
     throw new Error('Booking not found.');
   }
+  applyTicketEmail(booking, ticketEmail);
 
   const { emailPreview } = await completeBooking(booking, `dev_pi_${booking._id}`);
   const populated = await Booking.findById(booking._id)
@@ -273,7 +286,7 @@ const createRazorpayOrderHandler = asyncHandler(async (req, res) => {
     throw new Error('Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to .env.');
   }
 
-  const { bookingId } = req.body;
+  const { bookingId, ticketEmail } = req.body;
   const booking = await Booking.findById(bookingId).populate('movie');
   if (!booking) {
     res.status(404);
@@ -283,6 +296,7 @@ const createRazorpayOrderHandler = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('This booking is already paid.');
   }
+  applyTicketEmail(booking, ticketEmail);
 
   const order = await createRazorpayOrder({
     bookingId: booking._id,

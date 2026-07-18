@@ -211,11 +211,11 @@ export function loadRazorpayScript() {
 
 // Create a Razorpay order for a booking. Returns { ok, order?, error? } where
 // order = { orderId, amount (paise), currency, keyId, booking }.
-export async function createRazorpayOrder(bookingId, user) {
+export async function createRazorpayOrder(bookingId, user, ticketEmail) {
   try {
     const data = await request('/payment/razorpay/order', {
       method: 'POST',
-      body: { bookingId },
+      body: { bookingId, ticketEmail },
       user,
     })
     return { ok: true, order: data }
@@ -251,9 +251,9 @@ export async function createBooking({ showId, seats }, user) {
 
 // Simulate/confirm payment (dev-confirm in non-prod).
 // Returns { ok, booking?, emailPreview?, error? }.
-export async function confirmBookingPayment(bookingId, user) {
+export async function confirmBookingPayment(bookingId, user, ticketEmail) {
   try {
-    const data = await request('/payment/dev-confirm', { method: 'POST', body: { bookingId }, user })
+    const data = await request('/payment/dev-confirm', { method: 'POST', body: { bookingId, ticketEmail }, user })
     return { ok: true, booking: data.booking, emailPreview: data.emailPreview }
   } catch (err) {
     return { ok: false, error: err.message }
