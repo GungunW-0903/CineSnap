@@ -45,6 +45,11 @@ const syncUser = asyncHandler(async (req, res) => {
 
     sendWelcomeEmail({ to: email, name: firstName }); // fire-and-forget
   } else {
+    // Throttle login alerts: /sync fires on every page load / session restore,
+    // and alerting each one floods the shared Brevo sending domain — Gmail then
+    // rate-limits (421 4.7.28) and defers ALL our mail, including booking
+    // confirmations. One alert per 12h keeps the signal without the flood.
+    const prevLogin = user.lastLogin;
     user.email = email;
     user.firstName = firstName ?? user.firstName;
     user.lastName = lastName ?? user.lastName;
@@ -52,13 +57,16 @@ const syncUser = asyncHandler(async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Login alert (fire-and-forget)
-    sendLoginAlert({
-      to: email,
-      name: firstName || user.firstName,
-      when: new Date().toLocaleString(),
-      device,
-    });
+    const LOGIN_ALERT_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+    if (!prevLogin || Date.now() - new Date(prevLogin).getTime() > LOGIN_ALERT_COOLDOWN_MS) {
+      // Login alert (fire-and-forget)
+      sendLoginAlert({
+        to: email,
+        name: firstName || user.firstName,
+        when: new Date().toLocaleString(),
+        device,
+      });
+    }
   }
 
   res.json({ user, isNew });
