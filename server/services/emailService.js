@@ -65,7 +65,17 @@ async function sendViaBrevoApi({ to, subject, html, attachments }) {
  * Core send helper. Never throws into the request path — failures are logged
  * and swallowed so a flaky mail provider can't break a booking.
  */
-async function send({ to, subject, html, attachments }) {
+async function send({ to, subject, html, attachments, essential = false }) {
+  // Deliverability guard: when TRANSACTIONAL_ONLY is on, send ONLY booking
+  // confirmations (essential:true). Welcome/sign-in alerts are noise that
+  // inflate volume on the shared Brevo domain and trip Gmail's rate limit
+  // (421 4.7.28), which then defers the confirmations that actually matter.
+  const transactionalOnly = process.env.TRANSACTIONAL_ONLY !== 'false'; // default ON
+  if (transactionalOnly && !essential) {
+    console.log(`✉ [non-essential email suppressed] → ${to} | ${subject}`);
+    return { skipped: true, suppressed: true };
+  }
+
   try {
     const viaApi = await sendViaBrevoApi({ to, subject, html, attachments });
     if (viaApi) {
@@ -199,6 +209,7 @@ async function sendBookingConfirmation(booking) {
     subject: `🎟 Your CineSnap tickets — ${booking.movieTitle || 'Booking confirmed'}`,
     html: shell('Booking confirmed!', body),
     attachments,
+    essential: true, // ticket delivery must never be suppressed
   });
 }
 
