@@ -78,11 +78,13 @@ const Checkout = () => {
 
   const movie = booking?.movie || booking?.show?.movie || {}
 
-  // Completes the flow after any successful payment path.
-  const onPaid = (t, emailPreview) => {
+  // Completes the flow after any successful payment path. Passes the full
+  // populated booking so the success page can render the ticket + QR in-app —
+  // email delivery is a bonus, not something the user has to wait on.
+  const onPaid = (t, emailPreview, paidBooking) => {
     toast.success('Payment successful! 🎬', { id: t })
     refresh() // update loyalty points/tier now that this booking earned points
-    navigate('/booking-success', { state: { emailPreview } })
+    navigate('/booking-success', { state: { emailPreview, booking: paidBooking, ticketEmail: ticketEmail.trim() } })
   }
 
   const payWithRazorpay = async () => {
@@ -126,7 +128,7 @@ const Checkout = () => {
         const verified = await verifyRazorpayPayment(response, user)
         setPaying(false)
         if (verified.ok) {
-          onPaid(vt, verified.emailPreview)
+          onPaid(vt, verified.emailPreview, verified.booking)
         } else {
           toast.error(verified.error || 'Payment verification failed.', { id: vt })
         }
@@ -167,7 +169,7 @@ const Checkout = () => {
     const res = await confirmBookingPayment(bookingId, user, ticketEmail.trim())
     setPaying(false)
     if (res.ok) {
-      onPaid(t, res.emailPreview)
+      onPaid(t, res.emailPreview, res.booking)
     } else {
       toast.error(res.error || 'Payment failed', { id: t })
     }
