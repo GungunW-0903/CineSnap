@@ -30,6 +30,17 @@ function looksReal(user, pass) {
 }
 
 async function init() {
+  // 0. Brevo HTTPS API — the real delivery path in every environment. When it's
+  // configured, send() delivers over port 443 and never touches SMTP, so don't
+  // waste a startup round-trip verifying an SMTP transporter that won't be used
+  // (and would log a misleading "SMTP verification failed" warning on a stale
+  // Gmail app password or on Render, where outbound SMTP is blocked anyway).
+  if (process.env.BREVO_API_KEY) {
+    mode = 'brevo-api';
+    console.log('✓ Email ready (Brevo HTTPS API)');
+    return null; // send() calls the Brevo API directly; no nodemailer transporter needed
+  }
+
   const user = process.env.EMAIL_USER;
   // Accept either EMAIL_PASSWORD or EMAIL_PASS — both names appear in the wild
   // and mixing them up silently disables real SMTP, so support both.
