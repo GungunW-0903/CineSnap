@@ -81,14 +81,65 @@ const HeroSection = () => {
             variants={item}
             className="display-font text-[2.7rem] leading-[1.04] sm:text-[3.4rem] md:text-[4.3rem] lg:text-[5rem] max-w-2xl tracking-[-0.035em]"
           >
-            <span className="block text-white/95">Your next</span>
-            <span className="block">
+            <span className="block text-white/95">
+              {'Your next'.split(' ').map((w, i) => (
+                <motion.span
+                  key={w}
+                  className="inline-block mr-[0.28em]"
+                  initial={reduce ? false : { opacity: 0, y: 34, rotateX: -55 }}
+                  animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                  transition={{ delay: 0.25 + i * 0.09, type: 'spring', stiffness: 90, damping: 15 }}
+                >
+                  {w}
+                </motion.span>
+              ))}
+            </span>
+            <span className="relative block w-fit">
               <RotatingWord
                 words={['blockbuster', 'premiere', 'date night', 'epic']}
                 className="headline-highlight"
               />
+              <span className="headline-underline" aria-hidden />
             </span>
-            <span className="block text-white/95">booked in seconds.</span>
+            <span className="block text-white/95">
+              {'booked in'.split(' ').map((w, i) => (
+                <motion.span
+                  key={w}
+                  className="inline-block mr-[0.28em]"
+                  initial={reduce ? false : { opacity: 0, y: 34, rotateX: -55 }}
+                  animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                  transition={{ delay: 0.5 + i * 0.09, type: 'spring', stiffness: 90, damping: 15 }}
+                >
+                  {w}
+                </motion.span>
+              ))}
+              <motion.span
+                className="inline-block bg-linear-to-r from-white via-[#ffe9c9] to-white bg-clip-text text-transparent"
+                style={{ backgroundSize: '200% 100%' }}
+                initial={reduce ? false : { opacity: 0, y: 34, rotateX: -55 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  rotateX: 0,
+                  backgroundPosition: ['0% 50%', '200% 50%'],
+                }}
+                transition={{
+                  delay: 0.68,
+                  type: 'spring',
+                  stiffness: 90,
+                  damping: 15,
+                  backgroundPosition: {
+                    delay: 1.6,
+                    duration: 3.2,
+                    repeat: Infinity,
+                    repeatDelay: 2.4,
+                    ease: 'linear',
+                  },
+                }}
+              >
+                seconds.
+              </motion.span>
+            </span>
           </motion.h1>
 
           <motion.div variants={item} className="flex flex-wrap items-center gap-3 text-gray-200">

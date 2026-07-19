@@ -116,12 +116,69 @@ p {
   text-wrap: pretty;
 }
 .headline-highlight {
-  background: linear-gradient(100deg, #ffd27a 0%, #ffc24a 40%, #ff8a4c 100%);
+  background: linear-gradient(
+    100deg,
+    #ffd27a 0%,
+    #ffc24a 22%,
+    #ff8a4c 45%,
+    #ff5a3d 62%,
+    #ffc24a 80%,
+    #ffd27a 100%
+  );
+  background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   font-weight: 800;
   letter-spacing: -0.02em;
+  /* living gradient: hue drifts across the word continuously */
+  animation: cs-headline-flow 5.5s ease-in-out infinite;
+  /* soft ember glow lifting the word off the dark backdrop */
+  filter: drop-shadow(0 0 18px rgba(255, 138, 76, 0.45))
+    drop-shadow(0 0 42px rgba(255, 90, 61, 0.22));
+}
+@keyframes cs-headline-flow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .headline-highlight {
+    animation: none;
+  }
+}
+/* brush-stroke underline that sweeps in beneath the rotating word */
+.headline-underline {
+  position: absolute;
+  left: 2%;
+  right: 4%;
+  bottom: -0.06em;
+  height: 0.14em;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #ff8a4c 18%, #ffc24a 55%, transparent 95%);
+  opacity: 0.85;
+  transform-origin: left center;
+  animation: cs-underline-sweep 0.9s cubic-bezier(0.22, 0.9, 0.31, 1) 0.65s both;
+  pointer-events: none;
+}
+@keyframes cs-underline-sweep {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 0.85;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .headline-underline {
+    animation: none;
+  }
 }
 /* refined eyebrow / kicker label used above section titles */
 .cs-kicker {
