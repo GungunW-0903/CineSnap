@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const { ensureReady, EMAIL_FROM } = require('../config/email');
+const { isGmailEnabled, sendViaGmailApi } = require('../config/gmail');
 
 const BRAND = {
   name: 'CineSnap',
@@ -76,6 +77,29 @@ async function send({ to, subject, html, attachments, essential = false }) {
     return { skipped: true, suppressed: true };
   }
 
+  // Provider 1: Gmail API — sends from the user's real Gmail through Google's
+  // own servers (HTTPS, Render-safe). Gmail fully trusts its own outbound, so
+  // there are no shared-domain deferrals like with free relay providers.
+  if (isGmailEnabled) {
+    try {
+      const viaGmail = await sendViaGmailApi({
+        to,
+        subject,
+        html,
+        attachments,
+        from: EMAIL_FROM,
+      });
+      if (viaGmail) {
+        console.log(`✓ Email sent via Gmail API → ${to} (${viaGmail.messageId})`);
+        return viaGmail;
+      }
+    } catch (err) {
+      console.error(`✗ Gmail API send failed → ${to}:`, err.message);
+      // fall through to Brevo
+    }
+  }
+
+  // Provider 2: Brevo HTTPS API.
   try {
     const viaApi = await sendViaBrevoApi({ to, subject, html, attachments });
     if (viaApi) {

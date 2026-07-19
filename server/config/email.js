@@ -30,7 +30,15 @@ function looksReal(user, pass) {
 }
 
 async function init() {
-  // 0. Brevo HTTPS API — the real delivery path in every environment. When it's
+  // 0a. Gmail API — top-priority provider (see config/gmail.js): sends from
+  // the user's own Gmail via Google's servers, so Gmail never defers it.
+  if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN) {
+    mode = 'gmail-api';
+    console.log('✓ Email ready (Gmail API — sends from your own Gmail, no deferrals)');
+    return null; // send() calls the Gmail API directly; no nodemailer transporter needed
+  }
+
+  // 0b. Brevo HTTPS API — fallback HTTPS provider. When it's
   // configured, send() delivers over port 443 and never touches SMTP, so don't
   // waste a startup round-trip verifying an SMTP transporter that won't be used
   // (and would log a misleading "SMTP verification failed" warning on a stale

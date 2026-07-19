@@ -58,6 +58,7 @@ app.get('/api/health', (req, res) => {
     service: 'CineSnap API',
     time: new Date().toISOString(),
     email: {
+      gmailApi: !!(process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN),
       brevoApi: !!process.env.BREVO_API_KEY,
       smtpConfigured: !!(process.env.EMAIL_USER && (process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS)),
       mode: getEmailMode(),
